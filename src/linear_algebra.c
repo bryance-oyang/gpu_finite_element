@@ -15,15 +15,16 @@
 #include <string.h>
 #include "linear_algebra.h"
 
-/* comparison function to keep sparse matrix sorted:
- * (row, col) < (row, col)?
+/*
+ * comparison function to keep sparse matrix sorted:
+ * (row, col) < (row, col)? in column major format (same as CUDA)
  */
 static int sparse_row_col_cmp(int r0, int c0, int r1, int c1)
 {
-	if (r0 != r1) {
-		return (r0 > r1) - (r0 < r1);
-	} else {
+	if (c0 != c1) {
 		return (c0 > c1) - (c0 < c1);
+	} else {
+		return (r0 > r1) - (r0 < r1);
 	}
 }
 
