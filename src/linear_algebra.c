@@ -13,6 +13,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "linear_algebra.h"
 
 /*
@@ -154,6 +155,9 @@ int vec_init(struct vec *restrict v, int dim)
 	if (v->x == NULL) {
 		return -1;
 	}
+	for (int i = 0; i < dim; i++) {
+		v->x[i] = 0;
+	}
 	return 0;
 }
 
@@ -234,8 +238,8 @@ void vec_scale(number scalar, struct vec *restrict v)
 	}
 }
 
-void sparse_conj_grad(number tolerance, const struct sparse *restrict S,
-	const struct vec *restrict b, struct vec *restrict out)
+void sparse_conj_grad(const struct sparse *restrict S,
+	const struct vec *restrict b, struct vec *restrict out, number tolerance)
 {
 	number bsquared;
 	number alpha, beta, old_r2;
@@ -254,13 +258,14 @@ void sparse_conj_grad(number tolerance, const struct sparse *restrict S,
 
 	for (int k = 1; k <= out->dim; k++) {
 		old_r2 = vec_dot(&r, &r);
-		if (bsquared > 0 && old_r2 / bsquared < tolerance) {
+		if (bsquared > 0 && old_r2 / bsquared <= tolerance) {
 			break;
-		} else if (bsquared == 0 && old_r2 < tolerance) {
+		} else if (bsquared == 0 && old_r2 <= tolerance) {
 			break;
 		}
 
-		alpha = old_r2 / vec_S_dot(&d, S, &d);
+		number dSd = vec_S_dot(&d, S, &d);
+		alpha = old_r2 / dSd;
 
 		vec_copy(&d, &tmp);
 		vec_scale(alpha, &tmp);
@@ -278,4 +283,47 @@ void sparse_conj_grad(number tolerance, const struct sparse *restrict S,
 	vec_destroy(&d);
 	vec_destroy(&tmp);
 	vec_destroy(&A_alpha_d);
+}
+
+void vec2_copy(struct vec2 *restrict in, struct vec2 *restrict out)
+{
+	for (int i = 0; i < 2; i++) {
+		out->x[i] = in->x[i];
+	}
+}
+
+void vec2_add(struct vec2 *a, struct vec2 *b, struct vec2 *out)
+{
+	for (int i = 0; i < 2; i++) {
+		out->x[i] = a->x[i] + b->x[i];
+	}
+}
+
+void vec2_sub(struct vec2 *a, struct vec2 *b, struct vec2 *out)
+{
+	for (int i = 0; i < 2; i++) {
+		out->x[i] = a->x[i] - b->x[i];
+	}
+}
+
+void vec2_scale(number scalar, struct vec2 *restrict v)
+{
+	for (int i = 0; i < 2; i++) {
+		v->x[i] *= scalar;
+	}
+}
+
+number vec2_dot(struct vec2 *a, struct vec2 *b)
+{
+	number result = 0;
+	for (int i = 0; i < 2; i++) {
+		result += a->x[i] * b->x[i];
+	}
+	return result;
+}
+
+void vec2_normalize(struct vec2 *restrict v)
+{
+	number norm = sqrt(vec2_dot(v, v));
+	vec2_scale(1.0/norm, v);
 }

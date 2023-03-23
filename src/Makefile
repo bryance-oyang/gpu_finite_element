@@ -3,14 +3,14 @@ srcdir=
 
 SHELL=/bin/sh
 CC=gcc -pipe -mtune=native -march=native
-OFLAGS=-Ofast -flto
+OFLAGS=-O3 -flto
 CFLAGS+=-std=gnu17 -Wall -Wextra
-LDFLAGS=-lc
+LDFLAGS=-lc -lm
 PFLAGS=-ggdb3
 DFLAGS=$(CFLAGS) -MM -MT
 
 # debug and sanitize code
-CDEBUG=-ggdb3
+CDEBUG=-ggdb3 -DDEBUG
 SANITIZE=-ggdb3 -fno-omit-frame-pointer -fno-common -fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract -fsanitize=leak -fsanitize=undefined -fsanitize-address-use-after-scope
 TSANITIZE=-ggdb3 -fsanitize=thread
 

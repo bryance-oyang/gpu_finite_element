@@ -14,10 +14,10 @@
 #ifndef LINEAR_ALGEBRA_H
 #define LINEAR_ALGEBRA_H
 
-#if SINGLE_PRECISION == 1
-typedef float number;
-#else
+#ifdef DOUBLE_PRECISION
 typedef double number;
+#else
+typedef float number;
 #endif
 
 struct sparse {
@@ -28,15 +28,15 @@ struct sparse {
 	number *A;
 };
 
-struct vec {
-	int dim;
-	number *x;
-};
-
 int sparse_init(struct sparse *restrict S);
 void sparse_destroy(struct sparse *restrict S);
 int sparse_get_idx(struct sparse *restrict S, int row, int col, int *found);
 int sparse_add(struct sparse *restrict S, int row, int col, number entry);
+
+struct vec {
+	int dim;
+	number *x;
+};
 
 int vec_init(struct vec *restrict v, int dim);
 void vec_destroy(struct vec *restrict v);
@@ -49,6 +49,17 @@ void vec_add(struct vec *a, struct vec *b, struct vec *out);
 void vec_sub(struct vec *a, struct vec *b, struct vec *out);
 void vec_scale(number scalar, struct vec *restrict v);
 
-void sparse_conj_grad(number tolerance, const struct sparse *restrict S, const struct vec *restrict b, struct vec *restrict out);
+void sparse_conj_grad(const struct sparse *restrict S, const struct vec *restrict b, struct vec *restrict out, number tolerance);
+
+struct vec2 {
+	number x[2];
+};
+
+void vec2_copy(struct vec2 *restrict in, struct vec2 *restrict out);
+void vec2_add(struct vec2 *a, struct vec2 *b, struct vec2 *out);
+void vec2_sub(struct vec2 *a, struct vec2 *b, struct vec2 *out);
+void vec2_scale(number scalar, struct vec2 *restrict v);
+number vec2_dot(struct vec2 *a, struct vec2 *b);
+void vec2_normalize(struct vec2 *restrict v);
 
 #endif /* LINEAR_ALGEBRA_H */

@@ -15,17 +15,17 @@ static inline int insert_line(struct sparse *restrict S, int i, int j, number le
 {
 	int retval = 0;
 	number k = E / len;
-	retval += sparse_add(S, i, i, -k);
-	retval += sparse_add(S, i, j, k);
-	retval += sparse_add(S, j, i, k);
-	retval += sparse_add(S, j, j, -k);
+	retval += sparse_add(S, i, i, k);
+	retval += sparse_add(S, i, j, -k);
+	retval += sparse_add(S, j, i, -k);
+	retval += sparse_add(S, j, j, k);
 	return retval;
 }
 
 static inline int insert_boundary(struct sparse *restrict S, int i, number len, number E)
 {
 	number k = E / len;
-	return sparse_add(S, i, i, -k);
+	return sparse_add(S, i, i, k);
 }
 
 #endif /* ELEMENT_H */

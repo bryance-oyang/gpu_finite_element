@@ -6,40 +6,39 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#include <stdio.h>
-#include "element.h"
+#ifdef DEBUG
+#define _GNU_SOURCE 1
+#include <fenv.h>
+#endif /* DEBUG */
 
-//     0     1     2     3
-// --- * --- * --- * --- *
+#include <stdio.h>
+#include "finite_element.h"
 
 int main()
 {
-	struct sparse A;
-	struct vec gravity;
-	struct vec answer;
+#ifdef DEBUG
+	feenableexcept(FE_DIVBYZERO | FE_UNDERFLOW | FE_OVERFLOW | FE_INVALID);
+#endif /* DEBUG */
 
-	sparse_init(&A);
-	vec_init(&gravity, 4);
-	vec_init(&answer, 4);
+	struct mesh mesh;
+	mesh_init(&mesh);
 
-	gravity.x[0] = -1;
-	gravity.x[1] = -1;
-	gravity.x[2] = -1;
-	gravity.x[3] = -0.5;
+	int v0, v1, v2;
+	v0 = mesh_add_vertex(&mesh, -1, 1, false);
+	v1 = mesh_add_vertex(&mesh, 1, 1, false);
+	v2 = mesh_add_vertex(&mesh, 0, 0, true);
 
-	insert_boundary(&A, 0, 1, 1);
-	insert_line(&A, 0, 1, 1, 1);
-	insert_line(&A, 1, 2, 1, 1);
-	insert_line(&A, 2, 3, 1, 1);
+	mesh_add_triangle(&mesh, v0, v1, v2, 1, 1);
 
-	sparse_conj_grad(0.08, &A, &gravity, &answer);
+	struct finite_element_problem problem;
+	finite_element_problem_init(&problem, &mesh);
+	finite_element_problem_solve(&problem, 0.00);
 
-	for (int i = 0; i < 4; i++) {
-		printf("%f\n", answer.x[i]);
+	for (int i = 0; i < DIM*mesh.nenabled; i++) {
+		printf("%f\n", problem.c.x[i]);
 	}
 
-	vec_destroy(&answer);
-	vec_destroy(&gravity);
-	sparse_destroy(&A);
+	finite_element_problem_destroy(&problem);
+	mesh_destroy(&mesh);
 	return 0;
 }
