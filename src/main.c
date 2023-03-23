@@ -12,7 +12,9 @@
 #endif /* DEBUG */
 
 #include <stdio.h>
+#include <unistd.h>
 #include "finite_element.h"
+#include "visualize.h"
 
 int main()
 {
@@ -44,6 +46,15 @@ int main()
 		printf("%f\n", mesh.triangles[i].scalar_stress);
 	}
 
+	struct vis vis;
+	vis_init(&vis, &mesh);
+	vis_fill(&vis, &mesh);
+	for (;;) {
+		vis_send(&vis);
+		usleep(10000);
+	}
+
+	vis_destroy(&vis);
 	fep_destroy(&problem);
 	mesh_destroy(&mesh);
 	return 0;
