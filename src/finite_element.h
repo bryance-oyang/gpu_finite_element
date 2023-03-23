@@ -13,13 +13,16 @@
 
 /* Ac = b */
 struct finite_element_problem {
+	struct mesh *mesh;
 	struct sparse A;
 	struct vec c;
 	struct vec b;
 };
 
-int finite_element_problem_init(struct finite_element_problem *restrict p, struct mesh *restrict mesh);
-void finite_element_problem_destroy(struct finite_element_problem *restrict p);
-void finite_element_problem_solve(struct finite_element_problem *restrict p, number tolerance);
+int fep_init(struct finite_element_problem *restrict p, struct mesh *restrict mesh);
+void fep_destroy(struct finite_element_problem *restrict p);
+void fep_solve(struct finite_element_problem *restrict p, number tolerance);
+
+void fep_scalar_stress(struct finite_element_problem *restrict p);
 
 #endif /* FINITE_ELEMENT_H */

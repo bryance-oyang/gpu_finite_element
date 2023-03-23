@@ -31,14 +31,20 @@ int main()
 	mesh_add_triangle(&mesh, v0, v1, v2, 1, 1);
 
 	struct finite_element_problem problem;
-	finite_element_problem_init(&problem, &mesh);
-	finite_element_problem_solve(&problem, 0.00);
+	fep_init(&problem, &mesh);
+	fep_solve(&problem, 0.00);
+	fep_scalar_stress(&problem);
 
 	for (int i = 0; i < DIM*mesh.nenabled; i++) {
 		printf("%f\n", problem.c.x[i]);
 	}
 
-	finite_element_problem_destroy(&problem);
+	printf("scalar_stresses:\n");
+	for (int i = 0; i < mesh.ntriangles; i++) {
+		printf("%f\n", mesh.triangles[i].scalar_stress);
+	}
+
+	fep_destroy(&problem);
 	mesh_destroy(&mesh);
 	return 0;
 }

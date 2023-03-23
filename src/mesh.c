@@ -16,6 +16,7 @@ int mesh_init(struct mesh *restrict mesh)
 	mesh->vertices = NULL;
 	mesh->ntriangles = 0;
 	mesh->triangles = NULL;
+	mesh->nenabled = 0;
 	return 0;
 }
 
@@ -43,6 +44,9 @@ int mesh_add_vertex(struct mesh *restrict mesh, number x, number y, bool enabled
 	mesh->vertices[idx].pos.x[0] = x;
 	mesh->vertices[idx].pos.x[1] = y;
 	mesh->vertices[idx].enabled = enabled;
+	if (enabled) {
+		mesh->nenabled++;
+	}
 
 	return idx;
 }
@@ -80,8 +84,6 @@ void mesh_assign_vertex_ids(struct mesh *restrict mesh)
 			mesh->vertices[i].id = -1;
 		}
 	}
-
-	mesh->nenabled = next_id;
 }
 
 struct triangle triangle_make(int v0, int v1, int v2, number density, number elasticity)
@@ -157,8 +159,8 @@ void stiffness_add_triangle(struct sparse *restrict A, struct triangle *restrict
 			int j = vn->id;
 
 			/* xy loops */
-			for (int r = 0; r < 2; r++) {
-				for (int s = 0; s < 2; s++) {
+			for (int r = 0; r < DIM; r++) {
+				for (int s = 0; s < DIM; s++) {
 					number entry = 0;
 					if (r == s) {
 						entry += vec2_dot(&triangle->dof_grad[m], &triangle->dof_grad[n]);
@@ -166,7 +168,7 @@ void stiffness_add_triangle(struct sparse *restrict A, struct triangle *restrict
 					entry += triangle->dof_grad[m].x[r] * triangle->dof_grad[n].x[s];
 
 					entry *= triangle->area * triangle->elasticity / 2;
-					sparse_add(A, 2*i + r, 2*j + s, entry);
+					sparse_add(A, DIM*i + r, DIM*j + s, entry);
 				}
 			}
 		}
@@ -180,14 +182,13 @@ void forces_add_triangle(struct vec *restrict b, struct triangle *restrict trian
 		struct vertex *v = &triangle->mesh->vertices[triangle->vertices[n]];
 		if (v->enabled) {
 			int i = v->id;
-			b->x[2*i + 1] += -third_weight;
+			b->x[DIM*i + 1] += -third_weight;
 		}
 	}
 }
 
 void mesh_construct_problem(struct mesh *restrict mesh, struct sparse *restrict A, struct vec *b)
 {
-
 	for (int i = 0; i < mesh->ntriangles; i++) {
 		triangle_compute_area(&mesh->triangles[i]);
 		triangle_compute_dof(&mesh->triangles[i]);

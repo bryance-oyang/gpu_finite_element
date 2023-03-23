@@ -20,6 +20,8 @@ typedef double number;
 typedef float number;
 #endif
 
+#define SQR(x) ((x)*(x))
+
 struct sparse {
 	int len;
 	int size;

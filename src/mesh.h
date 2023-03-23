@@ -28,6 +28,8 @@ struct triangle {
 
 	number area;
 	struct vec2 dof_grad[3];
+
+	number scalar_stress;
 };
 
 struct mesh {
