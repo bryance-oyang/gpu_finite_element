@@ -28,7 +28,9 @@ int main()
 
 	load_obj("../obj/untitled.obj", &mesh);
 	for (int i = 0; i < mesh.nvertices; i++) {
-		if (mesh.vertices[i].pos.x[1] < 0) {
+		number x = mesh.vertices[i].pos.x[0];
+		number y = mesh.vertices[i].pos.x[1];
+		if (x < 0 || x > 11) {
 			mesh.vertices[i].enabled = false;
 		}
 	}
@@ -48,8 +50,8 @@ int main()
 		vis_send(&vis);
 		sleep(1);
 	}
-
 	vis_destroy(&vis);
+
 	fep_destroy(&problem);
 	mesh_destroy(&mesh);
 	return 0;

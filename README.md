@@ -3,7 +3,7 @@ GPU accelerated structural stress analysis using the finite element method
 or: [building bridges](https://www.youtube.com/watch?v=tVLxcZMzZmw) in the
 computer for fun.
 
-Compile with `make`. Has non-GPU version too without CUDA dependency (`make cpu`).
+Compile with `make gpu`. Has non-GPU version too without CUDA dependency (`make` or `make openmp`).
 
 ## Notes
 If $\psi^j$ is a small displacement field with $j$ indexing the spatial directions, then the strain is

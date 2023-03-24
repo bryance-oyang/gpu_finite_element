@@ -2,7 +2,7 @@ EXEC=a.out
 srcdir=
 
 SHELL=/bin/sh
-CC=gcc -pipe -mtune=native -march=native -pthread
+CC=gcc -pipe -mtune=native -march=native -pthread -fopenmp
 OFLAGS=-O3 -flto
 CFLAGS+=-std=gnu17 -Wall -Wextra
 LDFLAGS=-lc -lm
@@ -48,6 +48,9 @@ LDFLAGS+=$(TSANITIZE)
 else ifeq ($(MAKECMDGOALS), profile)
 CFLAGS+=$(OFLAGS) $(PFLAGS)
 LDFLAGS+=$(OFLAGS) $(PFLAGS)
+else ifeq ($(MAKECMDGOALS), gpu)
+CC=nvcc
+CFLAGS=-O3
 else
 CFLAGS+=$(OFLAGS)
 LDFLAGS+=$(OFLAGS)
@@ -60,6 +63,10 @@ endif
 .DEFAULT_GOAL=all
 .PHONY: all
 all: $(DEPS) $(EXEC)
+	@echo done
+
+.PHONY: gpu
+gpu: $(DEPS) $(EXEC)
 	@echo done
 
 .PHONY: clean

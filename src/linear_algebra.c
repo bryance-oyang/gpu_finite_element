@@ -18,14 +18,14 @@
 
 /*
  * comparison function to keep sparse matrix sorted:
- * (row, col) < (row, col)? in column major format (same as CUDA)
+ * (row, col) < (row, col)?
  */
 static int sparse_row_col_cmp(int r0, int c0, int r1, int c1)
 {
-	if (c0 != c1) {
-		return (c0 > c1) - (c0 < c1);
-	} else {
+	if (r0 != r1) {
 		return (r0 > r1) - (r0 < r1);
+	} else {
+		return (c0 > c1) - (c0 < c1);
 	}
 }
 
@@ -196,6 +196,9 @@ number vec_S_dot(const struct vec *a, const struct sparse *restrict S, const str
 {
 	number result = 0;
 
+#ifdef _OPENMP
+#pragma omp parallel for simd reduction(+:result) num_threads(8)
+#endif
 	for (int n = 0; n < S->len; n++) {
 		int i = S->row[n];
 		int j = S->col[n];

@@ -43,6 +43,10 @@ static int32_t lin_scale(number x, number lo, number hi, int32_t Lo, int32_t Hi)
 {
 	if (hi - lo < EPSILON) {
 		return 0;
+	} else if (x > hi) {
+		return Hi;
+	} else if (x < lo) {
+		return Lo;
 	} else {
 		return (Hi - Lo) * (x - lo) / (hi - lo) + Lo;
 	}
