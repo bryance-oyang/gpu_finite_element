@@ -35,12 +35,12 @@ int main()
 	v6 = mesh_add_vertex(&mesh, 3, 1, true);
 	v7 = mesh_add_vertex(&mesh, 3, 0, true);
 
-	mesh_add_triangle(&mesh, v0, v1, v2, 1, 1);
-	mesh_add_triangle(&mesh, v1, v2, v3, 1, 1);
-	mesh_add_triangle(&mesh, v2, v3, v5, 1, 1);
-	mesh_add_triangle(&mesh, v2, v4, v5, 1, 1);
-	mesh_add_triangle(&mesh, v4, v5, v6, 1, 1);
-	mesh_add_triangle(&mesh, v5, v6, v7, 1, 1);
+	mesh_add_triangle(&mesh, v0, v1, v2, 1, 100);
+	mesh_add_triangle(&mesh, v1, v2, v3, 1, 100);
+	mesh_add_triangle(&mesh, v2, v3, v5, 1, 100);
+	mesh_add_triangle(&mesh, v2, v4, v5, 1, 100);
+	mesh_add_triangle(&mesh, v4, v5, v6, 1, 100);
+	mesh_add_triangle(&mesh, v5, v6, v7, 1, 100);
 
 	struct finite_element_problem problem;
 	fep_init(&problem, &mesh);

@@ -2,6 +2,7 @@
 #define VISUALIZE_H
 
 #include <stdint.h>
+#include <math.h>
 #include "ws_ctube.h"
 #include "mesh.h"
 
@@ -49,8 +50,8 @@ static int32_t lin_scale(number x, number lo, number hi, int32_t Lo, int32_t Hi)
 
 static void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 {
-	number min_xy[2] = {NUMBER_MAX, NUMBER_MAX};
-	number max_xy[2] = {-NUMBER_MAX, -NUMBER_MAX};
+	number min_xy = NUMBER_MAX;
+	number max_xy = -NUMBER_MAX;
 	number min_stress = NUMBER_MAX;
 	number max_stress = -NUMBER_MAX;
 
@@ -60,11 +61,11 @@ static void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 			struct vertex *v = &mesh->vertices[mesh->triangles[i].vertices[j]];
 			for (int k = 0; k < DIM; k++) {
 				number coord = v->pos.x[k];
-				if (coord < min_xy[k]) {
-					min_xy[k] = coord;
+				if (coord < min_xy) {
+					min_xy = coord;
 				}
-				if (coord > max_xy[k]) {
-					max_xy[k] = coord;
+				if (coord > max_xy) {
+					max_xy = coord;
 				}
 			}
 		}
@@ -93,7 +94,7 @@ static void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 				}
 
 				number coord = v->pos.x[k];
-				vis->data[i*(3*DIM + 1) + j*DIM + k] = lin_scale(coord, 1.1*min_xy[k], 1.1*max_xy[k], Lo, Hi);
+				vis->data[i*(3*DIM + 1) + j*DIM + k] = lin_scale(coord, min_xy - 0.1*fabs(min_xy), max_xy + 0.1*fabs(max_xy), Lo, Hi);
 			}
 		}
 
