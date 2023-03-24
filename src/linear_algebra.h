@@ -45,8 +45,6 @@ void vec_add(struct vec *a, struct vec *b, struct vec *out);
 void vec_sub(struct vec *a, struct vec *b, struct vec *out);
 void vec_scale(number scalar, struct vec *restrict v);
 
-void sparse_conj_grad(const struct sparse *restrict S, const struct vec *restrict b, struct vec *restrict out, number tolerance);
-
 struct vec2 {
 	number x[2];
 };

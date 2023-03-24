@@ -116,9 +116,9 @@ static int sparse_insert(struct sparse *restrict S, int idx, int row,
 {
 	if (S->len == S->size) {
 		S->size *= 2;
-		S->row = reallocarray(S->row, S->size, sizeof(*S->row));
-		S->col = reallocarray(S->col, S->size, sizeof(*S->col));
-		S->A = reallocarray(S->A, S->size, sizeof(*S->A));
+		S->row = realloc(S->row, S->size * sizeof(*S->row));
+		S->col = realloc(S->col, S->size * sizeof(*S->col));
+		S->A = realloc(S->A, S->size * sizeof(*S->A));
 
 		if (S->row == NULL || S->col == NULL || S->A == NULL) {
 			return -1;
@@ -239,53 +239,6 @@ void vec_scale(number scalar, struct vec *restrict v)
 	for (int i = 0; i < v->dim; i++) {
 		v->x[i] *= scalar;
 	}
-}
-
-void sparse_conj_grad(const struct sparse *restrict S,
-	const struct vec *restrict b, struct vec *restrict out, number tolerance)
-{
-	number bsquared;
-	number alpha, beta, old_r2;
-	struct vec r, d, tmp, A_alpha_d;
-
-	bsquared = vec_dot(b, b);
-
-	vec_init(&r, out->dim);
-	vec_init(&d, out->dim);
-	vec_init(&tmp, out->dim);
-	vec_init(&A_alpha_d, out->dim);
-
-	vec_scale(0, out);
-	vec_copy(b, &r);
-	vec_copy(b, &d);
-
-	for (int k = 1; k <= out->dim; k++) {
-		old_r2 = vec_dot(&r, &r);
-		if (bsquared > 0 && old_r2 / bsquared <= tolerance) {
-			break;
-		} else if (bsquared == 0 && old_r2 <= tolerance) {
-			break;
-		}
-
-		number dSd = vec_S_dot(&d, S, &d);
-		alpha = old_r2 / dSd;
-
-		vec_copy(&d, &tmp);
-		vec_scale(alpha, &tmp);
-		vec_add(out, &tmp, out);
-
-		sparse_mult_vec(S, &tmp, &A_alpha_d);
-		vec_sub(&r, &A_alpha_d, &r);
-
-		beta = vec_dot(&r, &r) / old_r2;
-		vec_scale(beta / alpha, &tmp);
-		vec_add(&r, &tmp, &d);
-	}
-
-	vec_destroy(&r);
-	vec_destroy(&d);
-	vec_destroy(&tmp);
-	vec_destroy(&A_alpha_d);
 }
 
 void vec2_copy(struct vec2 *restrict in, struct vec2 *restrict out)

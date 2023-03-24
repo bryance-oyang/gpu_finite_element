@@ -30,21 +30,22 @@ int main()
 	for (int i = 0; i < mesh.nvertices; i++) {
 		number x = mesh.vertices[i].pos.x[0];
 		number y = mesh.vertices[i].pos.x[1];
-		if (x < 0 || x > 11) {
+		if (x < 0) {
 			mesh.vertices[i].enabled = false;
 		}
 	}
 
+	struct vis vis;
+	vis_init(&vis, &mesh);
+
 	struct finite_element_problem problem;
 	fep_init(&problem, &mesh);
 	printf("solving...\n");
-	fep_solve(&problem, 0.00);
+	fep_solve(&problem, 0.001, &vis);
 	printf("calculating stresses...\n");
 	fep_scalar_stress(&problem);
 	printf("done\n");
 
-	struct vis vis;
-	vis_init(&vis, &mesh);
 	vis_fill(&vis, &mesh);
 	for (;;) {
 		vis_send(&vis);

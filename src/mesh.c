@@ -35,7 +35,7 @@ void mesh_destroy(struct mesh *restrict mesh)
 int mesh_add_vertex(struct mesh *restrict mesh, number x, number y, bool enabled)
 {
 	mesh->nvertices++;
-	mesh->vertices = reallocarray(mesh->vertices, mesh->nvertices, sizeof(*mesh->vertices));
+	mesh->vertices = realloc(mesh->vertices, mesh->nvertices * sizeof(*mesh->vertices));
 	if (mesh->vertices == NULL) {
 		return -1;
 	}
@@ -54,7 +54,7 @@ int mesh_add_vertex(struct mesh *restrict mesh, number x, number y, bool enabled
 int mesh_add_triangle(struct mesh *restrict mesh, int v0, int v1, int v2, number density, number elasticity)
 {
 	mesh->ntriangles++;
-	mesh->triangles = reallocarray(mesh->triangles, mesh->ntriangles, sizeof(*mesh->triangles));
+	mesh->triangles = realloc(mesh->triangles, mesh->ntriangles * sizeof(*mesh->triangles));
 	if (mesh->triangles == NULL) {
 		return -1;
 	}

@@ -10,6 +10,7 @@
 #define FINITE_ELEMENT_H
 
 #include "mesh.h"
+#include "visualize.h"
 
 /* Ac = b */
 struct finite_element_problem {
@@ -25,7 +26,7 @@ struct finite_element_problem {
 
 int fep_init(struct finite_element_problem *restrict p, struct mesh *restrict mesh);
 void fep_destroy(struct finite_element_problem *restrict p);
-void fep_solve(struct finite_element_problem *restrict p, number tolerance);
+void fep_solve(struct finite_element_problem *restrict p, number tolerance, struct vis *vis);
 
 void fep_scalar_stress(struct finite_element_problem *restrict p);
 
