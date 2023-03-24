@@ -25,12 +25,22 @@ int main()
 	struct mesh mesh;
 	mesh_init(&mesh);
 
-	int v0, v1, v2;
-	v0 = mesh_add_vertex(&mesh, -1, 1, false);
-	v1 = mesh_add_vertex(&mesh, 1, 1, false);
-	v2 = mesh_add_vertex(&mesh, 0, 0, true);
+	int v0, v1, v2, v3, v4, v5, v6, v7;
+	v0 = mesh_add_vertex(&mesh, 0, 1, false);
+	v1 = mesh_add_vertex(&mesh, 0, 0, false);
+	v2 = mesh_add_vertex(&mesh, 1, 1, true);
+	v3 = mesh_add_vertex(&mesh, 1, 0, true);
+	v4 = mesh_add_vertex(&mesh, 2, 1, true);
+	v5 = mesh_add_vertex(&mesh, 2, 0, true);
+	v6 = mesh_add_vertex(&mesh, 3, 1, true);
+	v7 = mesh_add_vertex(&mesh, 3, 0, true);
 
 	mesh_add_triangle(&mesh, v0, v1, v2, 1, 1);
+	mesh_add_triangle(&mesh, v1, v2, v3, 1, 1);
+	mesh_add_triangle(&mesh, v2, v3, v5, 1, 1);
+	mesh_add_triangle(&mesh, v2, v4, v5, 1, 1);
+	mesh_add_triangle(&mesh, v4, v5, v6, 1, 1);
+	mesh_add_triangle(&mesh, v5, v6, v7, 1, 1);
 
 	struct finite_element_problem problem;
 	fep_init(&problem, &mesh);

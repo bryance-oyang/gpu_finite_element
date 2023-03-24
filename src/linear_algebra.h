@@ -14,13 +14,7 @@
 #ifndef LINEAR_ALGEBRA_H
 #define LINEAR_ALGEBRA_H
 
-#ifdef DOUBLE_PRECISION
-typedef double number;
-#else
-typedef float number;
-#endif
-
-#define SQR(x) ((x)*(x))
+#include "macro_def.h"
 
 struct sparse {
 	int len;

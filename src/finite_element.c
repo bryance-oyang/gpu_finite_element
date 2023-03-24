@@ -53,6 +53,10 @@ static void triangle_scalar_stress(struct vec *restrict c, struct triangle *rest
 	number syy = 0;
 
 	for (int m = 0; m < 3; m++) {
+		if (!vertices[triangle->vertices[m]].enabled) {
+			continue;
+		}
+
 		int i = vertices[triangle->vertices[m]].id;
 
 		sxx += c->x[2*i] * triangle->dof_grad[m].x[0];
