@@ -8,6 +8,7 @@
 
 #include <math.h>
 #include "finite_element.h"
+#include "cuda.h"
 
 int fep_init(struct finite_element_problem *restrict p, struct mesh *restrict mesh)
 {
@@ -24,8 +25,15 @@ int fep_init(struct finite_element_problem *restrict p, struct mesh *restrict me
 	p->mesh = mesh;
 	mesh_assign_vertex_ids(mesh);
 	mesh_construct_problem(mesh, &p->A, &p->b);
+
+	if (cuda_init(p) != 0) {
+		goto err_nocuda;
+	}
+
 	return 0;
 
+err_nocuda:
+	vec_destroy(&p->c);
 err_noc:
 	vec_destroy(&p->b);
 err_nob:
@@ -36,6 +44,7 @@ err_noA:
 
 void fep_destroy(struct finite_element_problem *restrict p)
 {
+	cuda_destroy(p);
 	vec_destroy(&p->c);
 	vec_destroy(&p->b);
 	sparse_destroy(&p->A);
@@ -43,7 +52,10 @@ void fep_destroy(struct finite_element_problem *restrict p)
 
 void fep_solve(struct finite_element_problem *restrict p, number tolerance)
 {
+#ifdef GPU_COMPUTE
+#else /* GPU_COMPUTE */
 	sparse_conj_grad(&p->A, &p->b, &p->c, tolerance);
+#endif /* GPU_COMPUTE */
 }
 
 static void triangle_scalar_stress(struct vec *restrict c, struct triangle *restrict triangle, struct vertex *restrict vertices)
@@ -74,6 +86,9 @@ static void triangle_scalar_stress(struct vec *restrict c, struct triangle *rest
 void fep_scalar_stress(struct finite_element_problem *restrict p)
 {
 	struct mesh *mesh = p->mesh;
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(8)
+#endif
 	for (int i = 0; i < mesh->ntriangles; i++) {
 		triangle_scalar_stress(&p->c, &mesh->triangles[i], mesh->vertices);
 	}

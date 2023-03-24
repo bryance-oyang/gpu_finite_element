@@ -17,6 +17,10 @@ struct finite_element_problem {
 	struct sparse A;
 	struct vec c;
 	struct vec b;
+
+#ifdef GPU_COMPUTE
+
+#endif /* GPU_COMPUTE */
 };
 
 int fep_init(struct finite_element_problem *restrict p, struct mesh *restrict mesh);
