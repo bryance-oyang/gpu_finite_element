@@ -48,12 +48,19 @@ static int32_t lin_scale(number x, number lo, number hi, int32_t Lo, int32_t Hi)
 	}
 }
 
+static int number_cmp(const void *a, const void *b)
+{
+	number aa = *(number *)a;
+	number bb = *(number *)b;
+	return (aa > bb) - (aa < bb);
+}
+
 static void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 {
 	number min_xy = NUMBER_MAX;
 	number max_xy = -NUMBER_MAX;
-	number min_stress = NUMBER_MAX;
-	number max_stress = -NUMBER_MAX;
+
+	number *stresses = malloc(mesh->ntriangles * sizeof(*stresses));
 
 	/* determine min/max */
 	for (int i = 0; i < mesh->ntriangles; i++) {
@@ -69,14 +76,13 @@ static void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 				}
 			}
 		}
-		number stress = mesh->triangles[i].scalar_stress;
-		if (stress < min_stress) {
-			min_stress = stress;
-		}
-		if (stress > max_stress) {
-			max_stress = stress;
-		}
+		stresses[i] = mesh->triangles[i].scalar_stress;
 	}
+
+	/* percentile of stresses */
+	qsort(stresses, mesh->ntriangles, sizeof(*stresses), number_cmp);
+	number min_stress = stresses[(int)(0.05 * mesh->ntriangles)];
+	number max_stress = stresses[(int)(0.95 * mesh->ntriangles)];
 
 	for (int i = 0; i < mesh->ntriangles; i++) {
 		for (int j = 0; j < 3; j++) {
@@ -99,7 +105,7 @@ static void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 		}
 
 		number stress = mesh->triangles[i].scalar_stress;
-		vis->data[(i+1)*(3*DIM + 1) - 1] = lin_scale(stress, min_stress, max_stress, 255, 0);
+		vis->data[(i+1)*(3*DIM + 1) - 1] = lin_scale(stress, min_stress, max_stress, 0, 255);
 	}
 }
 

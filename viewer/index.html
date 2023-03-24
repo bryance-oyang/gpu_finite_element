@@ -26,6 +26,7 @@
 
       canvas.setAttribute("width", img_width);
       canvas.setAttribute("height", img_height);
+
     }
 
     function setup_draw() {
@@ -35,6 +36,8 @@
       websocket.onmessage = (event) => {
         // clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         const data = new DataView(event.data)
         const DIM = 2;
@@ -55,7 +58,10 @@
               ctx.lineTo(x[0], x[1]);
             }
           }
-          ctx.fillStyle = `rgb(${stress}, ${stress}, ${stress})`;
+          ctx.strokeStyle = "#ffffff";
+          ctx.stroke();
+          //ctx.fillStyle = `hsl(${360*stress/255}, 100%, 50%)`;
+          ctx.fillStyle = `hsl(${255 - stress}, 100%, 50%)`;
           ctx.fill();
         }
       };

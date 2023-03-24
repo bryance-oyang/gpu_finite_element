@@ -8,3 +8,4 @@ html/
 latex/
 perf.*
 *.blend1
+obj/
