@@ -139,6 +139,10 @@ static void triangle_scalar_stress(struct vec *restrict c, struct triangle *rest
 	sxy *= triangle->elasticity;
 	syy *= triangle->elasticity;
 
+	number pressure = -0.5 * (sxx + syy);
+	sxx += pressure;
+	syy += pressure;
+
 	triangle->scalar_stress = sqrt(SQR(sxx) + 2*SQR(sxy) + SQR(syy));
 }
 
