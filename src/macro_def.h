@@ -3,11 +3,6 @@
 
 #include <float.h>
 
-// watch conjugate gradient solve the system (CPU only, no gpu)
-#ifndef GPU_COMPUTE
-#define ANIMATE 1
-#endif
-
 typedef float number;
 #define NUMBER_MAX FLT_MAX
 #define EPSILON 1e-12

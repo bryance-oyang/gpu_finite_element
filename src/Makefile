@@ -48,6 +48,9 @@ LDFLAGS+=$(TSANITIZE)
 else ifeq ($(MAKECMDGOALS), profile)
 CFLAGS+=$(OFLAGS) $(PFLAGS)
 LDFLAGS+=$(OFLAGS) $(PFLAGS)
+else ifeq ($(MAKECMDGOALS), animate)
+CFLAGS+=$(OFLAGS) -DANIMATE
+LDFLAGS+=$(OFLAGS)
 else ifeq ($(MAKECMDGOALS), gpu)
 CC=nvcc
 CFLAGS=-O3 -DGPU_COMPUTE
@@ -63,6 +66,10 @@ endif
 .DEFAULT_GOAL=all
 .PHONY: all
 all: $(DEPS) $(EXEC)
+	@echo done
+
+.PHONY: animate
+animate: $(DEPS) $(EXEC)
 	@echo done
 
 .PHONY: gpu

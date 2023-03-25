@@ -75,11 +75,13 @@ void sparse_conj_grad(struct finite_element_problem *restrict p,
 
 	for (int k = 1; k <= c->dim; k++) {
 #ifdef ANIMATE
-			fep_scalar_stress(p);
-			vis_fill(vis, p->mesh);
-			vis_send(vis);
-			usleep(15000);
-#endif
+		fep_scalar_stress(p);
+		vis_fill(vis, p->mesh);
+		vis_send(vis);
+		usleep(15000);
+#else /* ANIMATE */
+		(void)vis;
+#endif /* ANIMATE */
 
 		old_r2 = vec_dot(&r, &r);
 		if (bsquared > 0 && old_r2 / bsquared <= tolerance) {
