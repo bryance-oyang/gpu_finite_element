@@ -2,7 +2,7 @@ EXEC=a.out
 srcdir=
 
 SHELL=/bin/sh
-CC=gcc -pipe -mtune=native -march=native -pthread -fopenmp
+CC=gcc -pipe -mtune=native -march=native -pthread
 OFLAGS=-O3 -flto
 CFLAGS+=-std=gnu17 -Wall -Wextra
 LDFLAGS=-lc -lm
@@ -54,6 +54,10 @@ LDFLAGS+=$(OFLAGS)
 else ifeq ($(MAKECMDGOALS), gpu)
 CC=nvcc
 CFLAGS=-O3 -DGPU_COMPUTE
+else ifeq ($(MAKECMDGOALS), openmp)
+CC+=-fopenmp
+CFLAGS+=$(OFLAGS)
+LDFLAGS+=$(OFLAGS)
 else
 CFLAGS+=$(OFLAGS)
 LDFLAGS+=$(OFLAGS)
@@ -74,6 +78,10 @@ animate: $(DEPS) $(EXEC)
 
 .PHONY: gpu
 gpu: $(DEPS) $(EXEC)
+	@echo done
+
+.PHONY: openmp
+openmp: $(DEPS) $(EXEC)
 	@echo done
 
 .PHONY: clean

@@ -1,9 +1,13 @@
 # gpu_finite_element
-GPU accelerated structural stress analysis using the finite element method
-proof of concept.
+GPU accelerated structural stress analysis using the finite element method.
 
-Needs CUDA installation; compile with `make gpu`. Has non-GPU version too
-without CUDA dependency (`make` or `make openmp`).
+## Compiling
+gcc >= v4.7.0, make, POSIX (aka not Windows)
+- `make gpu`: depends on existing CUDA installation (`nvcc`) and NVIDIA graphics card for
+GPU acceleration
+- `make`: no dependencies; non-GPU, CPU-only
+- `make openmp`: compiler needs to support OpenMP; non-GPU, CPU-only
+- `make animate`: slow down iterative solver to animate/visualize convergence; non-GPU, CPU-only
 
 ## Notes
 If $\psi^j$ is a small displacement field with $j$ indexing the spatial directions, then the strain is
