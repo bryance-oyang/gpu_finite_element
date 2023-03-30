@@ -108,7 +108,7 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 		}
 
 		number stress = mesh->elements[i]->scalar_stress;
-		vis->data[(i+1)*(3*DIM + 1) - 1] = lin_scale(stress, min_stress, max_stress, 0, 255);
+		vis->data[(i+1)*(3*DIM + 1) - 1] = lin_scale(stress, min_stress, max_stress, 236, 0);
 	}
 }
 
