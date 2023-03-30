@@ -13,7 +13,7 @@
 
 int vis_init(struct vis *restrict vis, struct mesh *restrict mesh)
 {
-	vis->data_bytes = (3*DIM + 1) * mesh->ntriangles * sizeof(*vis->data);
+	vis->data_bytes = (3*DIM + 1) * mesh->nelements * sizeof(*vis->data);
 	vis->data = malloc(vis->data_bytes);
 	if (vis->data == NULL) {
 		goto err_nodata;
@@ -63,12 +63,12 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 	number min_xy = NUMBER_MAX;
 	number max_xy = -NUMBER_MAX;
 
-	number *stresses = malloc(mesh->ntriangles * sizeof(*stresses));
+	number *stresses = malloc(mesh->nelements * sizeof(*stresses));
 
 	/* determine min/max */
-	for (int i = 0; i < mesh->ntriangles; i++) {
+	for (int i = 0; i < mesh->nelements; i++) {
 		for (int j = 0; j < 3; j++) {
-			struct vertex *v = &mesh->vertices[mesh->triangles[i].vertices[j]];
+			struct vertex *v = mesh->elements[i]->vertices[j];
 			for (int k = 0; k < DIM; k++) {
 				number coord = v->pos.x[k];
 				if (coord < min_xy) {
@@ -79,17 +79,17 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 				}
 			}
 		}
-		stresses[i] = mesh->triangles[i].scalar_stress;
+		stresses[i] = mesh->elements[i]->scalar_stress;
 	}
 
 	/* percentile of stresses */
-	qsort(stresses, mesh->ntriangles, sizeof(*stresses), number_cmp);
-	number min_stress = stresses[(int)(0.05 * mesh->ntriangles)];
-	number max_stress = stresses[(int)(0.95 * mesh->ntriangles)];
+	qsort(stresses, mesh->nelements, sizeof(*stresses), number_cmp);
+	number min_stress = stresses[(int)(0.05 * (mesh->nelements - 1))];
+	number max_stress = stresses[(int)(0.95 * (mesh->nelements - 1))];
 
-	for (int i = 0; i < mesh->ntriangles; i++) {
+	for (int i = 0; i < mesh->nelements; i++) {
 		for (int j = 0; j < 3; j++) {
-			struct vertex *v = &mesh->vertices[mesh->triangles[i].vertices[j]];
+			struct vertex *v = mesh->elements[i]->vertices[j];
 			for (int k = 0; k < DIM; k++) {
 				int32_t Lo, Hi;
 				if (k == 0) {
@@ -103,11 +103,11 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 				}
 
 				number coord = v->pos.x[k];
-				vis->data[i*(3*DIM + 1) + j*DIM + k] = lin_scale(coord, min_xy - 0.1*fabs(min_xy), max_xy + 0.1*fabs(max_xy), Lo, Hi);
+				vis->data[i*(3*DIM + 1) + j*DIM + k] = lin_scale(coord, min_xy - 0.1*fabsf(min_xy), max_xy + 0.1*fabsf(max_xy), Lo, Hi);
 			}
 		}
 
-		number stress = mesh->triangles[i].scalar_stress;
+		number stress = mesh->elements[i]->scalar_stress;
 		vis->data[(i+1)*(3*DIM + 1) - 1] = lin_scale(stress, min_stress, max_stress, 0, 255);
 	}
 }

@@ -280,6 +280,6 @@ number vec2_dot(struct vec2 *a, struct vec2 *b)
 
 void vec2_normalize(struct vec2 *restrict v)
 {
-	number norm = sqrt(vec2_dot(v, v));
-	vec2_scale(1.0/norm, v);
+	number norm = sqrtf(vec2_dot(v, v));
+	vec2_scale(1.0f/norm, v);
 }

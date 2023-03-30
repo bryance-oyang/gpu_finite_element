@@ -119,42 +119,13 @@ void fep_solve(struct finite_element_problem *restrict p, number tolerance, stru
 #endif /* GPU_COMPUTE */
 }
 
-static void triangle_scalar_stress(struct vec *restrict c, struct triangle *restrict triangle, struct vertex *restrict vertices)
-{
-	number sxx = 0;
-	number sxy = 0;
-	number syy = 0;
-
-	for (int m = 0; m < 3; m++) {
-		if (!vertices[triangle->vertices[m]].enabled) {
-			continue;
-		}
-
-		int i = vertices[triangle->vertices[m]].id;
-
-		sxx += c->x[2*i] * triangle->dof_grad[m].x[0];
-		syy += c->x[2*i + 1] * triangle->dof_grad[m].x[1];
-		sxy += 0.5 * (c->x[2*i] * triangle->dof_grad[m].x[1] + c->x[2*i + 1] * triangle->dof_grad[m].x[0]);
-	}
-
-	sxx *= triangle->elasticity;
-	sxy *= triangle->elasticity;
-	syy *= triangle->elasticity;
-
-	number pressure = -0.5 * (sxx + syy);
-	sxx += pressure;
-	syy += pressure;
-
-	triangle->scalar_stress = sqrt(SQR(sxx) + 2*SQR(sxy) + SQR(syy));
-}
-
 void fep_scalar_stress(struct finite_element_problem *restrict p)
 {
-	struct mesh *mesh = p->mesh;
+	struct mesh *restrict mesh = p->mesh;
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(8)
 #endif
-	for (int i = 0; i < mesh->ntriangles; i++) {
-		triangle_scalar_stress(&p->c, &mesh->triangles[i], mesh->vertices);
+	for (int i = 0; i < mesh->nelements; i++) {
+		mesh->elements[i]->vtable->scalar_stress(&p->c, mesh->elements[i]);
 	}
 }
