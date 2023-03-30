@@ -1479,6 +1479,8 @@ static void ws_ctube_handler_process_queue(struct ws_ctube_list *connq, struct w
 		qentry = ws_ctube_container_of(node, typeof(*qentry), lnode);
 		conn = qentry->conn;
 
+		pthread_cleanup_push((cleanup_func)ws_ctube_conn_qentry_free, qentry);
+
 		switch (qentry->act) {
 		case WS_CTUBE_CONN_START:
 			pthread_mutex_lock(&conn_list->mutex);
@@ -1515,7 +1517,7 @@ static void ws_ctube_handler_process_queue(struct ws_ctube_list *connq, struct w
 			break;
 		}
 
-		ws_ctube_conn_qentry_free(qentry);
+		pthread_cleanup_pop(1); /* ws_ctube_conn_qentry_free */
 	}
 }
 
@@ -1923,7 +1925,7 @@ int ws_ctube_broadcast(struct ws_ctube *ctube, const void *data, size_t data_siz
 		double dt = (cur_time.tv_sec - ctube->prev_bcast_time.tv_sec) +
 			1e-9 * (cur_time.tv_nsec - ctube->prev_bcast_time.tv_nsec);
 
-		if (dt < 1.0f / ctube->max_bcast_fps) {
+		if (dt < 1.0 / ctube->max_bcast_fps) {
 			retval = -1;
 			goto out_ratelim;
 		}
