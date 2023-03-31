@@ -60,7 +60,7 @@ void fep_destroy(struct finite_element_problem *restrict p)
 	sparse_destroy(&p->A);
 }
 
-void sparse_conj_grad(struct finite_element_problem *restrict p,
+int sparse_conj_grad(struct finite_element_problem *restrict p,
 	float tolerance, struct vis *vis)
 {
 	struct sparse *restrict A = &p->A;
@@ -115,22 +115,27 @@ void sparse_conj_grad(struct finite_element_problem *restrict p,
 	vec_destroy(&r);
 	vec_destroy(&d);
 	vec_destroy(&A_alpha_d);
+
+	return 0;
 }
 
-void fep_solve(struct finite_element_problem *restrict p, float tolerance, struct vis *vis)
+int fep_solve(struct finite_element_problem *restrict p, float tolerance, struct vis *vis)
 {
+	int retval;
 	struct timespec start, end;
 	clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 
 #ifdef GPU_COMPUTE
-	gpu_conj_gradient(p, tolerance);
+	retval = gpu_conj_gradient(p, tolerance);
 #else /* GPU_COMPUTE */
-	sparse_conj_grad(p, tolerance, vis);
+	retval = sparse_conj_grad(p, tolerance, vis);
 #endif /* GPU_COMPUTE */
 
 	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
 	float msec = (end.tv_sec - start.tv_sec)*1e3 + (end.tv_nsec - start.tv_nsec)*1e-6;
 	printf("benchmarked solve time: %g ms\n", msec);
+
+	return retval;
 }
 
 void fep_scalar_stress(struct finite_element_problem *restrict p)

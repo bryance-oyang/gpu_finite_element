@@ -55,7 +55,7 @@ struct finite_element_problem {
 
 int fep_init(struct finite_element_problem *restrict p, struct mesh *restrict mesh);
 void fep_destroy(struct finite_element_problem *restrict p);
-void fep_solve(struct finite_element_problem *restrict p, float tolerance, struct vis *vis);
+int fep_solve(struct finite_element_problem *restrict p, float tolerance, struct vis *vis);
 
 void fep_scalar_stress(struct finite_element_problem *restrict p);
 

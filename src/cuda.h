@@ -14,7 +14,7 @@
 int cuda_init(struct finite_element_problem *restrict p);
 void cuda_destroy(struct finite_element_problem *restrict p);
 
-void gpu_conj_gradient(struct finite_element_problem *restrict p, float tolerance);
+int gpu_conj_gradient(struct finite_element_problem *restrict p, float tolerance);
 
 #endif /* GPU_COMPUTE */
 
