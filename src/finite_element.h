@@ -39,14 +39,16 @@ struct finite_element_problem {
 
 	float *gpu_r;
 	float *gpu_d;
-	float *gpu_tmp;
 
 	float *gpu_A_d;
 	float *gpu_A_alpha_d;
 
 	cusparseSpMatDescr_t descr_A;
+	cusparseDnVecDescr_t descr_d;
 	cusparseDnVecDescr_t descr_A_d;
 	cusparseDnVecDescr_t descr_A_alpha_d;
+
+	void *gpu_scratch;
 
 #endif /* GPU_COMPUTE */
 };
