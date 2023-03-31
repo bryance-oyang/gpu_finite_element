@@ -41,7 +41,10 @@ int main()
 	struct finite_element_problem problem;
 	fep_init(&problem, &mesh);
 	printf("solving...\n");
-	fep_solve(&problem, 0.001, &vis);
+	if (fep_solve(&problem, 0.001, &vis) != 0) {
+		printf("error in solve!!!!!!!!!!!!!!\n");
+		return -1;
+	}
 	printf("calculating stresses...\n");
 	fep_scalar_stress(&problem);
 	printf("done\n");
