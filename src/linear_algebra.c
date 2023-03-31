@@ -97,16 +97,23 @@ int sparse_get_idx(struct sparse *restrict S, int row, int col, int *found)
 			return mid;
 		}
 	}
-	if (sparse_row_col_cmp(row, col, S->row[lo], S->col[lo]) == 0) {
+
+	int cmp_result = sparse_row_col_cmp(row, col, S->row[lo], S->col[lo]);
+	if (cmp_result < 0) {
 		if (found != NULL) {
-			*found = 1;
+			*found = 0;
 		}
 		return lo;
-	} else {
+	} else if (cmp_result > 0) {
 		if (found != NULL) {
 			*found = 0;
 		}
 		return lo + 1;
+	} else {
+		if (found != NULL) {
+			*found = 1;
+		}
+		return lo;
 	}
 }
 
