@@ -26,6 +26,8 @@ int main()
 	struct mesh mesh;
 	mesh_init(&mesh);
 
+	printf("loading...\n");
+	fflush(stdout);
 	load_obj("../obj/beam.obj", &mesh);
 	for (int i = 0; i < mesh.nvertices; i++) {
 		float x = mesh.vertices[i].pos.x[0];
@@ -39,21 +41,28 @@ int main()
 	vis_init(&vis, &mesh);
 
 	struct finite_element_problem problem;
+	printf("initing...\n");
+	fflush(stdout);
 	fep_init(&problem, &mesh);
 	printf("solving...\n");
+	fflush(stdout);
 	if (fep_solve(&problem, 0.001, &vis) != 0) {
 		printf("error in solve!!!!!!!!!!!!!!\n");
 		return -1;
 	}
 	printf("calculating stresses...\n");
+	fflush(stdout);
 	fep_scalar_stress(&problem);
 	printf("done\n");
+	fflush(stdout);
 
+/*
 	vis_fill(&vis, &mesh);
 	for (;;) {
 		vis_send(&vis);
 		sleep(1);
 	}
+	*/
 	vis_destroy(&vis);
 
 	fep_destroy(&problem);
