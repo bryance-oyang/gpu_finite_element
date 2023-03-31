@@ -70,7 +70,7 @@ int cuda_init(struct finite_element_problem *restrict p)
 		&zero,
 		p->descr_A_d,
 		CUDA_R_32F,
-		CUSPARSE_SPMV_ALG_DEFAULT,
+		CUSPARSE_SPMV_COO_ALG2,
 		&scratch_size
 	);
 	cerr = cudaMalloc(&p->gpu_scratch, scratch_size);
@@ -119,7 +119,7 @@ int gpu_conj_gradient(struct finite_element_problem *restrict p, float tolerance
 			&zero,
 			p->descr_A_d,
 			CUDA_R_32F,
-			CUSPARSE_SPMV_ALG_DEFAULT,
+			CUSPARSE_SPMV_COO_ALG2,
 			p->gpu_scratch
 		);
 		cudaDeviceSynchronize();
@@ -143,7 +143,7 @@ int gpu_conj_gradient(struct finite_element_problem *restrict p, float tolerance
 			&zero,
 			p->descr_A_alpha_d,
 			CUDA_R_32F,
-			CUSPARSE_SPMV_ALG_DEFAULT,
+			CUSPARSE_SPMV_COO_ALG2,
 			p->gpu_scratch
 		);
 		cudaDeviceSynchronize();
