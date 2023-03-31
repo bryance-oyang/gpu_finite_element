@@ -16,7 +16,7 @@
 
 int cuda_init(struct finite_element_problem *restrict p)
 {
-	cublasStatus_t blas_status;
+	cublasStatus_t blas_status = CUBLAS_STATUS_SUCCESS;
 	cusparseStatus_t sparse_status = CUSPARSE_STATUS_SUCCESS;
 	cudaError_t cerr = cudaSuccess;
 

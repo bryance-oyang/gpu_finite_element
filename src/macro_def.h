@@ -10,6 +10,4 @@
 #define IMAGE_WIDTH 1024
 #define IMAGE_HEIGHT 1024
 
-#define GPU_COMPUTE
-
 #endif /* MACRO_DEF_H */
