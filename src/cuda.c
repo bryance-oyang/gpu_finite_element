@@ -40,12 +40,12 @@ int cuda_init(struct finite_element_problem *restrict p)
 	cerr = cudaMalloc((void**)&p->gpu_A_alpha_d, dim*sizeof(*p->gpu_A_alpha_d));
 
 	/* A */
-	cerr = cudaMemcpy(p->gpu_rows, p->A.row, nnz*sizeof(p->gpu_rows), cudaMemcpyHostToDevice);
-	cerr = cudaMemcpy(p->gpu_cols, p->A.col, nnz*sizeof(p->gpu_cols), cudaMemcpyHostToDevice);
-	cerr = cudaMemcpy(p->gpu_A, p->A.A, nnz*sizeof(p->gpu_A), cudaMemcpyHostToDevice);
+	cerr = cudaMemcpy(p->gpu_rows, p->A.row, nnz*sizeof(*p->gpu_rows), cudaMemcpyHostToDevice);
+	cerr = cudaMemcpy(p->gpu_cols, p->A.col, nnz*sizeof(*p->gpu_cols), cudaMemcpyHostToDevice);
+	cerr = cudaMemcpy(p->gpu_A, p->A.A, nnz*sizeof(*p->gpu_A), cudaMemcpyHostToDevice);
 
 	/* b */
-	cerr = cudaMemcpy(p->gpu_b, p->b.x, dim*sizeof(p->gpu_b), cudaMemcpyHostToDevice);
+	cerr = cudaMemcpy(p->gpu_b, p->b.x, dim*sizeof(*p->gpu_b), cudaMemcpyHostToDevice);
 
 	/* sparse descr */
 	sparse_status = cusparseCreateCoo(

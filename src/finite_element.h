@@ -30,8 +30,8 @@ struct finite_element_problem {
 	cublasHandle_t blas_handle;
 	cusparseHandle_t sparse_handle;
 
-	float *gpu_rows;
-	float *gpu_cols;
+	int32_t *gpu_rows;
+	int32_t *gpu_cols;
 	float *gpu_A;
 
 	float *gpu_b;

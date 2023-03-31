@@ -8,6 +8,8 @@
 
 #include <unistd.h>
 #include <math.h>
+#include <time.h>
+#include <stdio.h>
 #include "finite_element.h"
 #include "cuda.h"
 
@@ -117,10 +119,18 @@ void sparse_conj_grad(struct finite_element_problem *restrict p,
 
 void fep_solve(struct finite_element_problem *restrict p, float tolerance, struct vis *vis)
 {
+	struct timespec start, end;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+
 #ifdef GPU_COMPUTE
+	gpu_conj_gradient(p, tolerance);
 #else /* GPU_COMPUTE */
 	sparse_conj_grad(p, tolerance, vis);
 #endif /* GPU_COMPUTE */
+
+	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+	float msec = (end.tv_sec - start.tv_sec)*1e3 + (end.tv_nsec - start.tv_nsec)*1e-6;
+	printf("benchmarked solve time: %g ms\n", msec);
 }
 
 void fep_scalar_stress(struct finite_element_problem *restrict p)
