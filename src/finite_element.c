@@ -68,14 +68,14 @@ int sparse_conj_grad(struct finite_element_problem *restrict p,
 	struct vec *restrict c = &p->c;
 
 	float bsquared;
-	float alpha, beta, old_r2;
-	struct vec r, d, A_alpha_d;
+	float alpha, beta, old_r2, dAd;
+	struct vec r, d, A_d;
 
 	bsquared = vec_dot(b, b);
 
 	vec_init(&r, c->dim);
 	vec_init(&d, c->dim);
-	vec_init(&A_alpha_d, c->dim);
+	vec_init(&A_d, c->dim);
 
 	vec_scale(0, c);
 	vec_copy(b, &r);
@@ -98,14 +98,16 @@ int sparse_conj_grad(struct finite_element_problem *restrict p,
 			break;
 		}
 
-		float dSd = vec_S_dot(&d, A, &d);
-		alpha = old_r2 / dSd;
+		sparse_mult_vec(A, &d, &A_d);
+		dAd = vec_dot(&d, &A_d);
+
+		alpha = old_r2 / dAd;
 
 		vec_scale(alpha, &d);
-		vec_add(c, &d, c);
+		vec_add(&d, c, c);
 
-		sparse_mult_vec(A, &d, &A_alpha_d);
-		vec_sub(&r, &A_alpha_d, &r);
+		vec_scale(alpha, &A_d);
+		vec_sub(&r, &A_d, &r);
 
 		beta = vec_dot(&r, &r) / old_r2;
 		vec_scale(beta / alpha, &d);
@@ -114,7 +116,7 @@ int sparse_conj_grad(struct finite_element_problem *restrict p,
 
 	vec_destroy(&r);
 	vec_destroy(&d);
-	vec_destroy(&A_alpha_d);
+	vec_destroy(&A_d);
 
 	return 0;
 }
