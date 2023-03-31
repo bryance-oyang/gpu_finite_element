@@ -14,13 +14,14 @@
 #ifndef LINEAR_ALGEBRA_H
 #define LINEAR_ALGEBRA_H
 
+#include <stdint.h>
 #include "macro_def.h"
 
 struct sparse {
 	int len;
 	int size;
-	int *row;
-	int *col;
+	int32_t *row;
+	int32_t *col;
 	float *A;
 };
 

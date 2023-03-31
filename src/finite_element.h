@@ -30,11 +30,23 @@ struct finite_element_problem {
 	cublasHandle_t blas_handle;
 	cusparseHandle_t sparse_handle;
 
-	cusparseSpMatDescr_t descr_A;
-	cusparseDnVecDescr_t descrc_A_d;
-	cusparseDnVecDescr_t descr_A_alpha_d;
+	float *gpu_rows;
+	float *gpu_cols;
+	float *gpu_A;
 
-	float
+	float *gpu_b;
+	float *gpu_c;
+
+	float *gpu_r;
+	float *gpu_d;
+	float *gpu_tmp;
+
+	float *gpu_A_d;
+	float *gpu_A_alpha_d;
+
+	cusparseSpMatDescr_t descr_A;
+	cusparseDnVecDescr_t descr_A_d;
+	cusparseDnVecDescr_t descr_A_alpha_d;
 
 #endif /* GPU_COMPUTE */
 };
