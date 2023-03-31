@@ -6,27 +6,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#include "finite_element.h"
-
 #ifdef GPU_COMPUTE
+
 #include <cuda_runtime.h>
 #include <cusparse.h>
-#endif /* GPU_COMPUTE */
+#include "finite_element.h"
 
 int cuda_init(struct finite_element_problem *restrict p)
 {
-#ifdef GPU_COMPUTE
-#else /* GPU_COMPUTE */
-	(void)p;
-#endif /* GPU_COMPUTE */
-
-	return 0;
 }
 
 void cuda_destroy(struct finite_element_problem *restrict p)
 {
-#ifdef GPU_COMPUTE
-#else /* GPU_COMPUTE */
-	(void)p;
-#endif /* GPU_COMPUTE */
 }
+
+#endif /* GPU_COMPUTE */

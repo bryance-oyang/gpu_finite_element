@@ -25,7 +25,7 @@ int load_obj(char *filename, struct mesh *mesh)
 	size_t line_size;
 
 	while (getline(&line, &line_size, file) > 0) {
-		number n0, n1, n2;
+		float n0, n1, n2;
 		int v0, v1, v2, _v0, _v1, _v2, v0_, v1_, v2_;
 
 		if (sscanf(line, "v %f %f %f", &n0, &n1, &n2) == 3) {

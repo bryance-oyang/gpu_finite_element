@@ -28,8 +28,8 @@ int main()
 
 	load_obj("../obj/beam.obj", &mesh);
 	for (int i = 0; i < mesh.nvertices; i++) {
-		number x = mesh.vertices[i].pos.x[0];
-		number y = mesh.vertices[i].pos.x[1];
+		float x = mesh.vertices[i].pos.x[0];
+		float y = mesh.vertices[i].pos.x[1];
 		if (x < 0) {
 			mesh.vertices[i].enabled = false;
 		}

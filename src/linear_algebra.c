@@ -112,7 +112,7 @@ int sparse_get_idx(struct sparse *restrict S, int row, int col, int *found)
 
 /* insert nonexistent */
 static int sparse_insert(struct sparse *restrict S, int idx, int row,
-	int col, number entry)
+	int col, float entry)
 {
 	if (S->len == S->size) {
 		S->size *= 2;
@@ -135,7 +135,7 @@ static int sparse_insert(struct sparse *restrict S, int idx, int row,
 	return 0;
 }
 
-int sparse_add(struct sparse *restrict S, int row, int col, number entry)
+int sparse_add(struct sparse *restrict S, int row, int col, float entry)
 {
 	int found, idx;
 
@@ -181,9 +181,9 @@ void sparse_mult_vec(const struct sparse *restrict S, const struct vec *restrict
 	}
 }
 
-number vec_dot(const struct vec *a, const struct vec *b)
+float vec_dot(const struct vec *a, const struct vec *b)
 {
-	number result = 0;
+	float result = 0;
 	int dim = a->dim;
 
 	for (int i = 0; i < dim; i++) {
@@ -192,9 +192,9 @@ number vec_dot(const struct vec *a, const struct vec *b)
 	return result;
 }
 
-number vec_S_dot(const struct vec *a, const struct sparse *restrict S, const struct vec *b)
+float vec_S_dot(const struct vec *a, const struct sparse *restrict S, const struct vec *b)
 {
-	number result = 0;
+	float result = 0;
 
 #ifdef _OPENMP
 #pragma omp parallel for simd reduction(+:result) num_threads(8)
@@ -234,7 +234,7 @@ void vec_sub(struct vec *a, struct vec *b, struct vec *out)
 }
 
 /* scalar multiply */
-void vec_scale(number scalar, struct vec *restrict v)
+void vec_scale(float scalar, struct vec *restrict v)
 {
 	for (int i = 0; i < v->dim; i++) {
 		v->x[i] *= scalar;
@@ -262,16 +262,16 @@ void vec2_sub(struct vec2 *a, struct vec2 *b, struct vec2 *out)
 	}
 }
 
-void vec2_scale(number scalar, struct vec2 *restrict v)
+void vec2_scale(float scalar, struct vec2 *restrict v)
 {
 	for (int i = 0; i < 2; i++) {
 		v->x[i] *= scalar;
 	}
 }
 
-number vec2_dot(struct vec2 *a, struct vec2 *b)
+float vec2_dot(struct vec2 *a, struct vec2 *b)
 {
-	number result = 0;
+	float result = 0;
 	for (int i = 0; i < 2; i++) {
 		result += a->x[i] * b->x[i];
 	}
@@ -280,6 +280,6 @@ number vec2_dot(struct vec2 *a, struct vec2 *b)
 
 void vec2_normalize(struct vec2 *restrict v)
 {
-	number norm = sqrtf(vec2_dot(v, v));
+	float norm = sqrtf(vec2_dot(v, v));
 	vec2_scale(1.0f/norm, v);
 }

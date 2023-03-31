@@ -54,6 +54,7 @@ LDFLAGS+=$(OFLAGS)
 else ifeq ($(MAKECMDGOALS), gpu)
 CC=nvcc
 CFLAGS=-O3 -DGPU_COMPUTE
+LDFLAGS+=-lcublas -lcusparse
 else ifeq ($(MAKECMDGOALS), openmp)
 CC+=-fopenmp
 CFLAGS+=$(OFLAGS)

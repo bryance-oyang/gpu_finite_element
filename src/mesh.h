@@ -27,9 +27,9 @@ struct element {
 	int nvertices;
 	struct vertex *vertices[ELEMENT_MAX_VERTICES];
 
-	number density;
-	number elasticity;
-	number scalar_stress;
+	float density;
+	float elasticity;
+	float scalar_stress;
 };
 
 struct element_vtable {
@@ -40,7 +40,7 @@ struct element_vtable {
 
 struct triangle {
 	struct element element;
-	number area;
+	float area;
 	struct vec2 dof_grad[3];
 };
 
@@ -55,14 +55,14 @@ struct mesh {
 
 int mesh_init(struct mesh *restrict mesh);
 void mesh_destroy(struct mesh *restrict mesh);
-struct vertex *mesh_add_vertex(struct mesh *restrict mesh, number x, number y, bool enabled);
+struct vertex *mesh_add_vertex(struct mesh *restrict mesh, float x, float y, bool enabled);
 struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0,
-	struct vertex *v1, struct vertex *v2, number density, number elasticity);
+	struct vertex *v1, struct vertex *v2, float density, float elasticity);
 void mesh_assign_vertex_ids(struct mesh *restrict mesh);
 
 void triangle_compute_area(struct triangle *restrict triangle);
 void triangle_compute_dof(struct triangle *restrict triangle);
-number triangle_dof(struct triangle *restrict triangle, int vertex, number x, number y);
+float triangle_dof(struct triangle *restrict triangle, int vertex, float x, float y);
 
 void stiffness_add_triangle(struct sparse *restrict A, struct element *restrict element);
 void forces_add_triangle(struct vec *restrict b, struct element *restrict element);

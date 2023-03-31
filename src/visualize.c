@@ -38,7 +38,7 @@ void vis_destroy(struct vis *restrict vis)
 }
 
 /* linearly map x in lo, hi to Lo, Hi */
-static int32_t lin_scale(number x, number lo, number hi, int32_t Lo, int32_t Hi)
+static int32_t lin_scale(float x, float lo, float hi, int32_t Lo, int32_t Hi)
 {
 	if (hi - lo < EPSILON) {
 		return 0;
@@ -53,24 +53,24 @@ static int32_t lin_scale(number x, number lo, number hi, int32_t Lo, int32_t Hi)
 
 static int number_cmp(const void *a, const void *b)
 {
-	number aa = *(number *)a;
-	number bb = *(number *)b;
+	float aa = *(float *)a;
+	float bb = *(float *)b;
 	return (aa > bb) - (aa < bb);
 }
 
 void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 {
-	number min_xy = NUMBER_MAX;
-	number max_xy = -NUMBER_MAX;
+	float min_xy = FLT_MAX;
+	float max_xy = -FLT_MAX;
 
-	number *stresses = malloc(mesh->nelements * sizeof(*stresses));
+	float *stresses = malloc(mesh->nelements * sizeof(*stresses));
 
 	/* determine min/max */
 	for (int i = 0; i < mesh->nelements; i++) {
 		for (int j = 0; j < 3; j++) {
 			struct vertex *v = mesh->elements[i]->vertices[j];
 			for (int k = 0; k < DIM; k++) {
-				number coord = v->pos.x[k];
+				float coord = v->pos.x[k];
 				if (coord < min_xy) {
 					min_xy = coord;
 				}
@@ -84,8 +84,8 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 
 	/* percentile of stresses */
 	qsort(stresses, mesh->nelements, sizeof(*stresses), number_cmp);
-	number min_stress = stresses[(int)(0.05 * (mesh->nelements - 1))];
-	number max_stress = stresses[(int)(0.95 * (mesh->nelements - 1))];
+	float min_stress = stresses[(int)(0.05 * (mesh->nelements - 1))];
+	float max_stress = stresses[(int)(0.95 * (mesh->nelements - 1))];
 
 	for (int i = 0; i < mesh->nelements; i++) {
 		for (int j = 0; j < 3; j++) {
@@ -102,12 +102,12 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 					Hi = 0;
 				}
 
-				number coord = v->pos.x[k];
+				float coord = v->pos.x[k];
 				vis->data[i*(3*DIM + 1) + j*DIM + k] = lin_scale(coord, min_xy - 0.1*fabsf(min_xy), max_xy + 0.1*fabsf(max_xy), Lo, Hi);
 			}
 		}
 
-		number stress = mesh->elements[i]->scalar_stress;
+		float stress = mesh->elements[i]->scalar_stress;
 		vis->data[(i+1)*(3*DIM + 1) - 1] = lin_scale(stress, min_stress, max_stress, 236, 0);
 	}
 }

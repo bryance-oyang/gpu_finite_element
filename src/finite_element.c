@@ -27,14 +27,19 @@ int fep_init(struct finite_element_problem *restrict p, struct mesh *restrict me
 	mesh_assign_vertex_ids(mesh);
 	mesh_construct_problem(mesh, &p->A, &p->b);
 
+#ifdef GPU_COMPUTE
 	if (cuda_init(p) != 0) {
 		goto err_nocuda;
 	}
+#endif /* GPU_COMPUTE */
 
 	return 0;
 
+#ifdef GPU_COMPUTE
 err_nocuda:
 	vec_destroy(&p->c);
+#endif /* GPU_COMPUTE */
+
 err_noc:
 	vec_destroy(&p->b);
 err_nob:
@@ -45,21 +50,23 @@ err_noA:
 
 void fep_destroy(struct finite_element_problem *restrict p)
 {
+#ifdef GPU_COMPUTE
 	cuda_destroy(p);
+#endif
 	vec_destroy(&p->c);
 	vec_destroy(&p->b);
 	sparse_destroy(&p->A);
 }
 
 void sparse_conj_grad(struct finite_element_problem *restrict p,
-	number tolerance, struct vis *vis)
+	float tolerance, struct vis *vis)
 {
 	struct sparse *restrict A = &p->A;
 	struct vec *restrict b = &p->b;
 	struct vec *restrict c = &p->c;
 
-	number bsquared;
-	number alpha, beta, old_r2;
+	float bsquared;
+	float alpha, beta, old_r2;
 	struct vec r, d, tmp, A_alpha_d;
 
 	bsquared = vec_dot(b, b);
@@ -90,7 +97,7 @@ void sparse_conj_grad(struct finite_element_problem *restrict p,
 			break;
 		}
 
-		number dSd = vec_S_dot(&d, A, &d);
+		float dSd = vec_S_dot(&d, A, &d);
 		alpha = old_r2 / dSd;
 
 		vec_copy(&d, &tmp);
@@ -111,7 +118,7 @@ void sparse_conj_grad(struct finite_element_problem *restrict p,
 	vec_destroy(&A_alpha_d);
 }
 
-void fep_solve(struct finite_element_problem *restrict p, number tolerance, struct vis *vis)
+void fep_solve(struct finite_element_problem *restrict p, float tolerance, struct vis *vis)
 {
 #ifdef GPU_COMPUTE
 #else /* GPU_COMPUTE */

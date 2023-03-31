@@ -42,7 +42,7 @@ void mesh_destroy(struct mesh *restrict mesh)
 	}
 }
 
-struct vertex *mesh_add_vertex(struct mesh *restrict mesh, number x, number y, bool enabled)
+struct vertex *mesh_add_vertex(struct mesh *restrict mesh, float x, float y, bool enabled)
 {
 	mesh->nvertices++;
 	mesh->vertices = realloc(mesh->vertices, mesh->nvertices * sizeof(*mesh->vertices));
@@ -62,7 +62,7 @@ struct vertex *mesh_add_vertex(struct mesh *restrict mesh, number x, number y, b
 }
 
 struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0,
-	struct vertex *v1, struct vertex *v2, number density, number elasticity)
+	struct vertex *v1, struct vertex *v2, float density, float elasticity)
 {
 	mesh->nelements++;
 	mesh->elements = realloc(mesh->elements, mesh->nelements * sizeof(*mesh->elements));
@@ -135,12 +135,12 @@ void triangle_compute_dof(struct triangle *restrict triangle)
 		vec2_scale(vec2_dot(&v01, &v21) / vec2_dot(&v21, &v21), &v21);
 		vec2_sub(&v01, &v21, &triangle->dof_grad[(i+0)%3]);
 
-		number s = 1.0f / vec2_dot(&v01, &triangle->dof_grad[(i+0)%3]);
+		float s = 1.0f / vec2_dot(&v01, &triangle->dof_grad[(i+0)%3]);
 		vec2_scale(s, &triangle->dof_grad[(i+0)%3]);
 	}
 }
 
-number triangle_dof(struct triangle *restrict triangle, int vertex, number x, number y)
+float triangle_dof(struct triangle *restrict triangle, int vertex, float x, float y)
 {
 	struct vec2 vxy;
 	vxy.x[0] = x;
@@ -174,7 +174,7 @@ void stiffness_add_triangle(struct sparse *restrict A, struct element *restrict 
 			/* xy loops */
 			for (int r = 0; r < DIM; r++) {
 				for (int s = 0; s < DIM; s++) {
-					number entry = 0;
+					float entry = 0;
 					if (r == s) {
 						entry += vec2_dot(&triangle->dof_grad[m], &triangle->dof_grad[n]);
 					}
@@ -192,7 +192,7 @@ void forces_add_triangle(struct vec *restrict b, struct element *restrict elemen
 {
 	struct triangle *triangle = container_of(element, struct triangle, element);
 
-	number third_weight = triangle->area * element->density / 3;
+	float third_weight = triangle->area * element->density / 3;
 	for (int n = 0; n < 3; n++) {
 		struct vertex *v = element->vertices[n];
 		if (v->enabled) {
@@ -205,9 +205,9 @@ void forces_add_triangle(struct vec *restrict b, struct element *restrict elemen
 void triangle_scalar_stress(struct vec *restrict c, struct element *restrict element)
 {
 	struct triangle *triangle = container_of(element, struct triangle, element);
-	number sxx = 0;
-	number sxy = 0;
-	number syy = 0;
+	float sxx = 0;
+	float sxy = 0;
+	float syy = 0;
 
 	for (int m = 0; m < 3; m++) {
 		if (!element->vertices[m]->enabled) {
@@ -225,7 +225,7 @@ void triangle_scalar_stress(struct vec *restrict c, struct element *restrict ele
 	sxy *= element->elasticity;
 	syy *= element->elasticity;
 
-	number pressure = -0.5f * (sxx + syy);
+	float pressure = -0.5f * (sxx + syy);
 	sxx += pressure;
 	syy += pressure;
 

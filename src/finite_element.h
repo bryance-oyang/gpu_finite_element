@@ -12,21 +12,36 @@
 #include "mesh.h"
 #include "visualize.h"
 
+#ifdef GPU_COMPUTE
+#include <cuda_runtime.h>
+#include <cublas.h>
+#include <cusparse.h>
+#endif /* GPU_COMPUTE */
+
 /* Ac = b */
 struct finite_element_problem {
 	struct mesh *mesh;
 	struct sparse A;
-	struct vec c;
 	struct vec b;
+	struct vec c;
 
 #ifdef GPU_COMPUTE
+
+	cublasHandle_t blas_handle;
+	cusparseHandle_t sparse_handle;
+
+	cusparseSpMatDescr_t descr_A;
+	cusparseDnVecDescr_t descrc_A_d;
+	cusparseDnVecDescr_t descr_A_alpha_d;
+
+	float
 
 #endif /* GPU_COMPUTE */
 };
 
 int fep_init(struct finite_element_problem *restrict p, struct mesh *restrict mesh);
 void fep_destroy(struct finite_element_problem *restrict p);
-void fep_solve(struct finite_element_problem *restrict p, number tolerance, struct vis *vis);
+void fep_solve(struct finite_element_problem *restrict p, float tolerance, struct vis *vis);
 
 void fep_scalar_stress(struct finite_element_problem *restrict p);
 
