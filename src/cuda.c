@@ -37,7 +37,6 @@ int cuda_init(struct finite_element_problem *restrict p)
 	cerr = cudaMalloc((void**)&p->gpu_d, dim*sizeof(*p->gpu_d));
 
 	cerr = cudaMalloc((void**)&p->gpu_A_d, dim*sizeof(*p->gpu_A_d));
-	cerr = cudaMalloc((void**)&p->gpu_A_alpha_d, dim*sizeof(*p->gpu_A_alpha_d));
 
 	/* A */
 	cerr = cudaMemcpy(p->gpu_rows, p->A.row, nnz*sizeof(*p->gpu_rows), cudaMemcpyHostToDevice);
@@ -55,8 +54,6 @@ int cuda_init(struct finite_element_problem *restrict p)
 		&p->descr_d, dim, p->gpu_d, CUDA_R_32F);
 	sparse_status = cusparseCreateDnVec(
 		&p->descr_A_d, dim, p->gpu_A_d, CUDA_R_32F);
-	sparse_status = cusparseCreateDnVec(
-		&p->descr_A_alpha_d, dim, p->gpu_A_alpha_d, CUDA_R_32F);
 
 	/* scratch buffer */
 	float one = 1, zero = 0;
@@ -128,26 +125,12 @@ int gpu_conj_gradient(struct finite_element_problem *restrict p, float tolerance
 		blas_status |= cublasSdot_v2(p->blas_handle, dim, p->gpu_d, 1, p->gpu_A_d, 1, &dSd);
 		alpha = old_r2 / dSd;
 
+		blas_status |= cublasSscal_v2(p->blas_handle, dim, &alpha, p->gpu_A_d, 1);
 		blas_status |= cublasSscal_v2(p->blas_handle, dim, &alpha, p->gpu_d, 1);
 		cudaDeviceSynchronize();
 		blas_status |= cublasSaxpy_v2(p->blas_handle, dim, &one, p->gpu_d, 1, p->gpu_c, 1);
-		cudaDeviceSynchronize();
 
-		/* A alpha d */
-		sparse_status |= cusparseSpMV(
-			p->sparse_handle,
-			CUSPARSE_OPERATION_NON_TRANSPOSE,
-			&one,
-			p->descr_A,
-			p->descr_d,
-			&zero,
-			p->descr_A_alpha_d,
-			CUDA_R_32F,
-			CUSPARSE_SPMV_COO_ALG2,
-			p->gpu_scratch
-		);
-		cudaDeviceSynchronize();
-		blas_status |= cublasSaxpy_v2(p->blas_handle, dim, &neg_one, p->gpu_A_alpha_d, 1, p->gpu_r, 1);
+		blas_status |= cublasSaxpy_v2(p->blas_handle, dim, &neg_one, p->gpu_A_d, 1, p->gpu_r, 1);
 		cudaDeviceSynchronize();
 
 		blas_status |= cublasSdot_v2(p->blas_handle, dim, p->gpu_r, 1, p->gpu_r, 1, &beta);
