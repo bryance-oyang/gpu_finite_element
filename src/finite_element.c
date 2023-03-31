@@ -142,7 +142,7 @@ void fep_scalar_stress(struct finite_element_problem *restrict p)
 {
 	struct mesh *restrict mesh = p->mesh;
 #ifdef _OPENMP
-#pragma omp parallel for num_threads(8)
+#pragma omp parallel for num_threads(OMP_NTHREAD)
 #endif
 	for (int i = 0; i < mesh->nelements; i++) {
 		mesh->elements[i]->vtable->scalar_stress(&p->c, mesh->elements[i]);

@@ -197,7 +197,7 @@ float vec_S_dot(const struct vec *a, const struct sparse *restrict S, const stru
 	float result = 0;
 
 #ifdef _OPENMP
-#pragma omp parallel for simd reduction(+:result) num_threads(8)
+#pragma omp parallel for simd reduction(+:result) num_threads(OMP_NTHREAD)
 #endif
 	for (int n = 0; n < S->len; n++) {
 		int i = S->row[n];
