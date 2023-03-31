@@ -40,7 +40,6 @@ void vec_destroy(struct vec *restrict v);
 
 void sparse_mult_vec(const struct sparse *restrict S, const struct vec *restrict v, struct vec *restrict out);
 float vec_dot(const struct vec *a, const struct vec *b);
-float vec_S_dot(const struct vec *a, const struct sparse *restrict S, const struct vec *b);
 void vec_copy(const struct vec *restrict in, struct vec *restrict out);
 void vec_add(struct vec *a, struct vec *b, struct vec *out);
 void vec_sub(struct vec *a, struct vec *b, struct vec *out);

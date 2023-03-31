@@ -192,21 +192,6 @@ float vec_dot(const struct vec *a, const struct vec *b)
 	return result;
 }
 
-float vec_S_dot(const struct vec *a, const struct sparse *restrict S, const struct vec *b)
-{
-	float result = 0;
-
-#ifdef _OPENMP
-#pragma omp parallel for simd reduction(+:result) num_threads(OMP_NTHREAD)
-#endif
-	for (int n = 0; n < S->len; n++) {
-		int i = S->row[n];
-		int j = S->col[n];
-		result += a->x[i] * S->A[n] * b->x[j];
-	}
-	return result;
-}
-
 /* they must have the same dimensions */
 void vec_copy(const struct vec *restrict in, struct vec *restrict out)
 {
