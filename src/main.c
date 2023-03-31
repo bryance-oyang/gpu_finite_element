@@ -56,13 +56,11 @@ int main()
 	printf("done\n");
 	fflush(stdout);
 
-/*
 	vis_fill(&vis, &mesh);
 	for (;;) {
 		vis_send(&vis);
 		sleep(1);
 	}
-	*/
 	vis_destroy(&vis);
 
 	fep_destroy(&problem);
