@@ -88,7 +88,7 @@ int gpu_conj_gradient(struct finite_element_problem *restrict p, float tolerance
 	const float neg_one = -1;
 
 	float bsquared;
-	float alpha, beta, old_r2, dSd;
+	float alpha, beta, old_r2, dAd;
 	int dim = p->b.dim;
 
 	blas_status |= cublasSdot_v2(p->blas_handle, dim, p->gpu_b, 1, p->gpu_b, 1, &bsquared);
@@ -97,8 +97,6 @@ int gpu_conj_gradient(struct finite_element_problem *restrict p, float tolerance
 	blas_status |= cublasScopy_v2(p->blas_handle, dim, p->gpu_b, 1, p->gpu_d, 1);
 
 	for (int k = 1; k <= dim; k++) {
-		cudaDeviceSynchronize();
-
 		blas_status |= cublasSdot_v2(p->blas_handle, dim, p->gpu_r, 1, p->gpu_r, 1, &old_r2);
 		if (bsquared > 0 && old_r2 / bsquared <= tolerance) {
 			break;
@@ -119,28 +117,23 @@ int gpu_conj_gradient(struct finite_element_problem *restrict p, float tolerance
 			CUSPARSE_SPMV_COO_ALG2,
 			p->gpu_scratch
 		);
-		cudaDeviceSynchronize();
 
 		/* dAd */
-		blas_status |= cublasSdot_v2(p->blas_handle, dim, p->gpu_d, 1, p->gpu_A_d, 1, &dSd);
-		alpha = old_r2 / dSd;
+		blas_status |= cublasSdot_v2(p->blas_handle, dim, p->gpu_d, 1, p->gpu_A_d, 1, &dAd);
+		alpha = old_r2 / dAd;
 
 		blas_status |= cublasSscal_v2(p->blas_handle, dim, &alpha, p->gpu_A_d, 1);
 		blas_status |= cublasSscal_v2(p->blas_handle, dim, &alpha, p->gpu_d, 1);
-		cudaDeviceSynchronize();
 		blas_status |= cublasSaxpy_v2(p->blas_handle, dim, &one, p->gpu_d, 1, p->gpu_c, 1);
 
 		blas_status |= cublasSaxpy_v2(p->blas_handle, dim, &neg_one, p->gpu_A_d, 1, p->gpu_r, 1);
-		cudaDeviceSynchronize();
 
 		blas_status |= cublasSdot_v2(p->blas_handle, dim, p->gpu_r, 1, p->gpu_r, 1, &beta);
 		beta /= old_r2 * alpha;
 		blas_status |= cublasSscal_v2(p->blas_handle, dim, &beta, p->gpu_d, 1);
-		cudaDeviceSynchronize();
 		blas_status |= cublasSaxpy_v2(p->blas_handle, dim, &one, p->gpu_r, 1, p->gpu_d, 1);
 	}
 
-	cudaDeviceSynchronize();
 	cerr = cudaMemcpy(p->c.x, p->gpu_c, dim*sizeof(*p->gpu_c), cudaMemcpyDeviceToHost);
 
 	if (blas_status || sparse_status || cerr) {
