@@ -23,6 +23,10 @@ int main()
 	feenableexcept(FE_DIVBYZERO | FE_UNDERFLOW | FE_OVERFLOW | FE_INVALID);
 #endif /* DEBUG */
 
+#ifndef GPU_COMPUTE
+	printf("=== Running cpu only version (for gpu acceleration, compile with `make gpu`) ===\n");
+#endif /* GPU_COMPUTE */
+
 	struct mesh mesh;
 	mesh_init(&mesh);
 
@@ -44,16 +48,22 @@ int main()
 	printf("initing...\n");
 	fflush(stdout);
 	fep_init(&problem, &mesh);
+
 	printf("solving...\n");
 	fflush(stdout);
 	if (fep_solve(&problem, 0.001, &vis) != 0) {
 		printf("error in solve!!!!!!!!!!!!!!\n");
 		return -1;
 	}
+
 	printf("calculating stresses...\n");
 	fflush(stdout);
 	fep_scalar_stress(&problem);
 	printf("done\n");
+
+#ifndef GPU_COMPUTE
+	printf("=== Running cpu only version (for gpu acceleration, compile with `make gpu`) ===\n");
+#endif /* GPU_COMPUTE */
 	fflush(stdout);
 
 	vis_fill(&vis, &mesh);
