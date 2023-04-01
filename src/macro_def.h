@@ -1,3 +1,7 @@
+/**
+ * @file
+ */
+
 #ifndef MACRO_DEF_H
 #define MACRO_DEF_H
 

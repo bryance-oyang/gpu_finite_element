@@ -6,11 +6,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * @file
+ */
+
 #ifndef FINITE_ELEMENT_H
 #define FINITE_ELEMENT_H
 
 #include "mesh.h"
-#include "visualize.h"
+
+struct vis;
 
 #ifdef GPU_COMPUTE
 #include <cuda_runtime.h>
@@ -53,8 +58,6 @@ struct finite_element_problem {
 
 int fep_init(struct finite_element_problem *restrict p, struct mesh *restrict mesh);
 void fep_destroy(struct finite_element_problem *restrict p);
-int fep_solve(struct finite_element_problem *restrict p, float tolerance, struct vis *vis);
-
-void fep_scalar_stress(struct finite_element_problem *restrict p);
+int fep_solve(struct finite_element_problem *restrict p, float tolerance, struct vis *restrict vis);
 
 #endif /* FINITE_ELEMENT_H */

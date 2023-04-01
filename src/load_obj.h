@@ -6,12 +6,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * @file
+ */
+
 #ifndef LOAD_OBJ_H
 #define LOAD_OBJ_H
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "macro_def.h"
+
 #include "mesh.h"
 
 int load_obj(char *filename, struct mesh *mesh)

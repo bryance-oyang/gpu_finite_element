@@ -6,10 +6,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * @file
+ * @brief mesh
+ */
+
 #include <stdlib.h>
 #include <math.h>
-#include "container_of.h"
+
 #include "mesh.h"
+#include "container_of.h"
 
 static struct element_vtable triangle_vtable = {
 	.stiffness_add = stiffness_add_triangle,
@@ -237,5 +243,15 @@ void mesh_construct_problem(struct mesh *restrict mesh, struct sparse *restrict 
 	for (int i = 0; i < mesh->nelements; i++) {
 		mesh->elements[i]->vtable->stiffness_add(A, mesh->elements[i]);
 		mesh->elements[i]->vtable->forces_add(b, mesh->elements[i]);
+	}
+}
+
+void mesh_scalar_stress(struct mesh *restrict mesh, struct vec *restrict c)
+{
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(OMP_NTHREAD)
+#endif
+	for (int i = 0; i < mesh->nelements; i++) {
+		mesh->elements[i]->vtable->scalar_stress(c, mesh->elements[i]);
 	}
 }

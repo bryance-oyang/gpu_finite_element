@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+
 #include "linear_algebra.h"
 
 /*
@@ -274,4 +275,63 @@ void vec2_normalize(struct vec2 *restrict v)
 {
 	float norm = sqrtf(vec2_dot(v, v));
 	vec2_scale(1.0f/norm, v);
+}
+
+int sparse_conj_grad(struct sparse *restrict A, struct vec *restrict b,
+	struct vec *restrict c, float tolerance, struct vis *restrict vis,
+	struct mesh *restrict mesh)
+{
+	float bsquared;
+	float alpha, beta, old_r2, dAd;
+	struct vec r, d, A_d;
+
+	bsquared = vec_dot(b, b);
+
+	vec_init(&r, c->dim);
+	vec_init(&d, c->dim);
+	vec_init(&A_d, c->dim);
+
+	vec_scale(0, c);
+	vec_copy(b, &r);
+	vec_copy(b, &d);
+
+	for (int k = 1; k <= c->dim; k++) {
+#ifdef ANIMATE
+		mesh_scalar_stress(mesh, c);
+		vis_fill(vis, mesh);
+		vis_send(vis);
+		usleep(15000);
+#else /* ANIMATE */
+		(void)vis;
+		(void)mesh;
+#endif /* ANIMATE */
+
+		old_r2 = vec_dot(&r, &r);
+		if (bsquared > 0 && old_r2 / bsquared <= tolerance) {
+			break;
+		} else if (bsquared == 0 && old_r2 <= tolerance) {
+			break;
+		}
+
+		sparse_mult_vec(A, &d, &A_d);
+		dAd = vec_dot(&d, &A_d);
+
+		alpha = old_r2 / dAd;
+
+		vec_scale(alpha, &d);
+		vec_add(&d, c, c);
+
+		vec_scale(alpha, &A_d);
+		vec_sub(&r, &A_d, &r);
+
+		beta = vec_dot(&r, &r) / old_r2;
+		vec_scale(beta / alpha, &d);
+		vec_add(&r, &d, &d);
+	}
+
+	vec_destroy(&r);
+	vec_destroy(&d);
+	vec_destroy(&A_d);
+
+	return 0;
 }

@@ -6,10 +6,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * @file
+ * @brief sends mesh to webpage via websocket_ctube
+ */
+
 #include <math.h>
+
 #include "visualize.h"
-#include "ws_ctube.h"
 #include "mesh.h"
+#include "ws_ctube.h"
 
 int vis_init(struct vis *restrict vis, struct mesh *restrict mesh)
 {

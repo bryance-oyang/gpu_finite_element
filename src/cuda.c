@@ -6,6 +6,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * @file
+ * @brief GPU accelerated solve
+ */
+
 #include "finite_element.h"
 
 #ifdef GPU_COMPUTE

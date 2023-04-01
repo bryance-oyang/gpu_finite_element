@@ -6,10 +6,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * @file
+ */
+
 #ifndef MESH_H
 #define MESH_H
 
 #include <stdbool.h>
+
 #include "linear_algebra.h"
 
 #define ELEMENT_MAX_VERTICES 8
@@ -63,11 +68,11 @@ void mesh_assign_vertex_ids(struct mesh *restrict mesh);
 void triangle_compute_area(struct triangle *restrict triangle);
 void triangle_compute_dof(struct triangle *restrict triangle);
 float triangle_dof(struct triangle *restrict triangle, int vertex, float x, float y);
-
 void stiffness_add_triangle(struct sparse *restrict A, struct element *restrict element);
 void forces_add_triangle(struct vec *restrict b, struct element *restrict element);
 void triangle_scalar_stress(struct vec *restrict c, struct element *restrict element);
 
 void mesh_construct_problem(struct mesh *restrict mesh, struct sparse *restrict A, struct vec *b);
+void mesh_scalar_stress(struct mesh *restrict mesh, struct vec *restrict c);
 
 #endif /* MESH_H */

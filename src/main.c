@@ -6,16 +6,22 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * @file
+ * @brief main
+ */
+
+
 #ifdef DEBUG
 #define _GNU_SOURCE 1
 #include <fenv.h>
 #endif /* DEBUG */
 
-#include <stdio.h>
 #include <unistd.h>
+
 #include "load_obj.h"
-#include "finite_element.h"
 #include "visualize.h"
+#include "finite_element.h"
 
 int main()
 {
@@ -61,7 +67,7 @@ int main()
 
 	printf("calculating stresses...\n");
 	fflush(stdout);
-	fep_scalar_stress(&problem);
+	mesh_scalar_stress(&mesh, &problem.c);
 	printf("done\n");
 
 #ifndef GPU_COMPUTE

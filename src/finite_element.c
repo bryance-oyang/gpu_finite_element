@@ -6,10 +6,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * @file
+ * @brief setup finite element problem
+ */
+
 #include <unistd.h>
-#include <math.h>
-#include <time.h>
 #include <stdio.h>
+#include <time.h>
+#include <math.h>
+
 #include "finite_element.h"
 #include "cuda.h"
 
@@ -60,68 +66,7 @@ void fep_destroy(struct finite_element_problem *restrict p)
 	sparse_destroy(&p->A);
 }
 
-int sparse_conj_grad(struct finite_element_problem *restrict p,
-	float tolerance, struct vis *vis)
-{
-	struct sparse *restrict A = &p->A;
-	struct vec *restrict b = &p->b;
-	struct vec *restrict c = &p->c;
-
-	float bsquared;
-	float alpha, beta, old_r2, dAd;
-	struct vec r, d, A_d;
-
-	bsquared = vec_dot(b, b);
-
-	vec_init(&r, c->dim);
-	vec_init(&d, c->dim);
-	vec_init(&A_d, c->dim);
-
-	vec_scale(0, c);
-	vec_copy(b, &r);
-	vec_copy(b, &d);
-
-	for (int k = 1; k <= c->dim; k++) {
-#ifdef ANIMATE
-		fep_scalar_stress(p);
-		vis_fill(vis, p->mesh);
-		vis_send(vis);
-		usleep(15000);
-#else /* ANIMATE */
-		(void)vis;
-#endif /* ANIMATE */
-
-		old_r2 = vec_dot(&r, &r);
-		if (bsquared > 0 && old_r2 / bsquared <= tolerance) {
-			break;
-		} else if (bsquared == 0 && old_r2 <= tolerance) {
-			break;
-		}
-
-		sparse_mult_vec(A, &d, &A_d);
-		dAd = vec_dot(&d, &A_d);
-
-		alpha = old_r2 / dAd;
-
-		vec_scale(alpha, &d);
-		vec_add(&d, c, c);
-
-		vec_scale(alpha, &A_d);
-		vec_sub(&r, &A_d, &r);
-
-		beta = vec_dot(&r, &r) / old_r2;
-		vec_scale(beta / alpha, &d);
-		vec_add(&r, &d, &d);
-	}
-
-	vec_destroy(&r);
-	vec_destroy(&d);
-	vec_destroy(&A_d);
-
-	return 0;
-}
-
-int fep_solve(struct finite_element_problem *restrict p, float tolerance, struct vis *vis)
+int fep_solve(struct finite_element_problem *restrict p, float tolerance, struct vis *restrict vis)
 {
 	int retval;
 	struct timespec start, end;
@@ -130,7 +75,7 @@ int fep_solve(struct finite_element_problem *restrict p, float tolerance, struct
 #ifdef GPU_COMPUTE
 	retval = gpu_conj_gradient(p, tolerance);
 #else /* GPU_COMPUTE */
-	retval = sparse_conj_grad(p, tolerance, vis);
+	retval = sparse_conj_grad(&p->A, &p->b, &p->c, tolerance, vis, p->mesh);
 #endif /* GPU_COMPUTE */
 
 	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
@@ -138,15 +83,4 @@ int fep_solve(struct finite_element_problem *restrict p, float tolerance, struct
 	printf("benchmarked solve time: %g ms\n", msec);
 
 	return retval;
-}
-
-void fep_scalar_stress(struct finite_element_problem *restrict p)
-{
-	struct mesh *restrict mesh = p->mesh;
-#ifdef _OPENMP
-#pragma omp parallel for num_threads(OMP_NTHREAD)
-#endif
-	for (int i = 0; i < mesh->nelements; i++) {
-		mesh->elements[i]->vtable->scalar_stress(&p->c, mesh->elements[i]);
-	}
 }

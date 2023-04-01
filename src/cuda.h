@@ -6,6 +6,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * @file
+ */
+
 #ifndef CUDA_H
 #define CUDA_H
 

@@ -8,14 +8,17 @@
 
 /**
  * @file
- * @brief non-GPU accelerated and unoptimized versions
  */
 
 #ifndef LINEAR_ALGEBRA_H
 #define LINEAR_ALGEBRA_H
 
 #include <stdint.h>
+
 #include "macro_def.h"
+
+struct mesh;
+struct vis;
 
 struct sparse {
 	int len;
@@ -55,5 +58,9 @@ void vec2_sub(struct vec2 *a, struct vec2 *b, struct vec2 *out);
 void vec2_scale(float scalar, struct vec2 *restrict v);
 float vec2_dot(struct vec2 *a, struct vec2 *b);
 void vec2_normalize(struct vec2 *restrict v);
+
+int sparse_conj_grad(struct sparse *restrict A, struct vec *restrict b,
+	struct vec *restrict c, float tolerance, struct vis *restrict vis,
+	struct mesh *restrict mesh);
 
 #endif /* LINEAR_ALGEBRA_H */

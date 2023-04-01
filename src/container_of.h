@@ -1,3 +1,7 @@
+/**
+ * @file
+ */
+
 #ifndef CONTAINER_OF_H
 #define CONTAINER_OF_H
 

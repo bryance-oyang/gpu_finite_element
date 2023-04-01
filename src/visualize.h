@@ -6,12 +6,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * @file
+ */
+
 #ifndef VISUALIZE_H
 #define VISUALIZE_H
 
 #include <stdlib.h>
-#include <stdint.h>
-#include "mesh.h"
+
+struct mesh;
 
 struct vis {
 	struct ws_ctube *ctube;
