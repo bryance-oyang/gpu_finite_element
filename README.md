@@ -18,7 +18,7 @@ directions, then the strain is
 $$
 s^{ij} = \frac{1}{2}(\nabla^i \psi^j + \nabla^j \psi^i)
 $$
-and for isotropic linear elasticity (scalar $E$), the stress is
+and for scalar linear elasticity $E$, the stress is
 $$
 \sigma^{ij} = E s^{ij}
 $$
