@@ -226,10 +226,14 @@ int gpu_conj_gradient(struct finite_element_problem *restrict p, float tolerance
 		blas_status |= cublasSdot_v2(p->blas_handle, dim, p->gpu_d, 1, p->gpu_A_d, 1, &dAd);
 		alpha = old_r2 / dAd;
 
+		/* Ad = alpha Ad; d = alpha d; */
 		blas_status |= cublasSscal_v2(p->blas_handle, dim, &alpha, p->gpu_A_d, 1);
 		blas_status |= cublasSscal_v2(p->blas_handle, dim, &alpha, p->gpu_d, 1);
+
+		/* c += alpha d */
 		blas_status |= cublasSaxpy_v2(p->blas_handle, dim, &one, p->gpu_d, 1, p->gpu_c, 1);
 
+		/* r -= alpha Ad */
 		blas_status |= cublasSaxpy_v2(p->blas_handle, dim, &neg_one, p->gpu_A_d, 1, p->gpu_r, 1);
 
 		blas_status |= cublasSdot_v2(p->blas_handle, dim, p->gpu_r, 1, p->gpu_r, 1, &beta);

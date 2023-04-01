@@ -232,20 +232,10 @@ void triangle_scalar_stress(struct vec *restrict c, struct element *restrict ele
 	element->scalar_stress = sqrtf(SQR(sxx) + 2*SQR(sxy) + SQR(syy));
 }
 
-
 void mesh_construct_problem(struct mesh *restrict mesh, struct sparse *restrict A, struct vec *b)
 {
 	for (int i = 0; i < mesh->nelements; i++) {
 		mesh->elements[i]->vtable->stiffness_add(A, mesh->elements[i]);
 		mesh->elements[i]->vtable->forces_add(b, mesh->elements[i]);
 	}
-
-	/*
-	for (int i = 0; i < mesh->ntriangles; i++) {
-		triangle_compute_area(&mesh->triangles[i]);
-		triangle_compute_dof(&mesh->triangles[i]);
-		stiffness_add_triangle(A, &mesh->triangles[i]);
-		forces_add_triangle(b, &mesh->triangles[i]);
-	}
-	*/
 }

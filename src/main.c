@@ -47,12 +47,15 @@ int main()
 	struct finite_element_problem problem;
 	printf("initing...\n");
 	fflush(stdout);
-	fep_init(&problem, &mesh);
+	if (fep_init(&problem, &mesh) != 0) {
+		printf("error in fep_init!!!!!!!!!!!!!!\n");
+		return -1;
+	}
 
 	printf("solving...\n");
 	fflush(stdout);
 	if (fep_solve(&problem, 0.001, &vis) != 0) {
-		printf("error in solve!!!!!!!!!!!!!!\n");
+		printf("error in fep_solve!!!!!!!!!!!!!!\n");
 		return -1;
 	}
 
