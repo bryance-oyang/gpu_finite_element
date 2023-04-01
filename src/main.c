@@ -41,7 +41,7 @@ int main()
 	load_obj("../obj/beam.obj", &mesh);
 	for (int i = 0; i < mesh.nvertices; i++) {
 		float x = mesh.vertices[i].pos.x[0];
-		float y = mesh.vertices[i].pos.x[1];
+		//float y = mesh.vertices[i].pos.x[1];
 		if (x < 0) {
 			mesh.vertices[i].enabled = false;
 		}

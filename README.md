@@ -1,6 +1,8 @@
 # gpu_finite_element
-GPU accelerated structural stress analysis using the finite element method: a
-rudimentary proof of concept.
+GPU accelerated structural stress analysis using the finite element method and
+CUDA: a rudimentary proof of concept.
+
+![beam.png](beam.png)
 
 ## Compiling
 gcc >= v4.7.0, make, POSIX (aka not Windows)

@@ -11,7 +11,6 @@
  * @brief setup finite element problem
  */
 
-#include <unistd.h>
 #include <stdio.h>
 #include <time.h>
 #include <math.h>
