@@ -229,9 +229,9 @@ int gpu_conj_gradient(struct finite_element_problem *restrict p, float tolerance
 
 		/* dAd */
 		blas_status |= cublasSdot_v2(p->blas_handle, dim, p->gpu_d, 1, p->gpu_A_d, 1, &dAd);
-		alpha = old_r2 / dAd;
 
 		/* Ad = alpha Ad; d = alpha d; */
+		alpha = old_r2 / dAd;
 		blas_status |= cublasSscal_v2(p->blas_handle, dim, &alpha, p->gpu_A_d, 1);
 		blas_status |= cublasSscal_v2(p->blas_handle, dim, &alpha, p->gpu_d, 1);
 

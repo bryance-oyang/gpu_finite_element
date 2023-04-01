@@ -99,6 +99,7 @@ struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0
 	return triangle;
 }
 
+/* assign matrix indices: only enabled vertices will enter the matrix */
 void mesh_assign_vertex_ids(struct mesh *restrict mesh)
 {
 	int next_id = 0;
@@ -121,21 +122,27 @@ void triangle_compute_area(struct triangle *restrict triangle)
 	struct vec2 *v1 = &triangle->element.vertices[1]->pos;
 	struct vec2 *v2 = &triangle->element.vertices[2]->pos;
 
+	/* area = 0.5 * cross product of edges */
 	vec2_sub(v1, v0, &v10);
 	vec2_sub(v2, v0, &v20);
 	triangle->area = fabsf(0.5f * (v10.x[0]*v20.x[1] - v10.x[1]*v20.x[0]));
 }
 
+/**
+ * computes the gradients of functions that are 1 at one vertex and 0 at the
+ * other 2; do this for all 3 vertices
+ */
 void triangle_compute_dof(struct triangle *restrict triangle)
 {
 	struct vec2 v01, v21;
 
 	for (int i = 0; i < 3; i++) {
+		/* v0 is the vertex where the function will be 1 */
 		struct vec2 *v0 = &triangle->element.vertices[(i+0)%3]->pos;
 		struct vec2 *v1 = &triangle->element.vertices[(i+1)%3]->pos;
 		struct vec2 *v2 = &triangle->element.vertices[(i+2)%3]->pos;
 
-		// gram schmidt
+		/* gram schmidt to get perp vector to opposite edge of v0 */
 		vec2_sub(v0, v1, &v01);
 		vec2_sub(v2, v1, &v21);
 		vec2_scale(vec2_dot(&v01, &v21) / vec2_dot(&v21, &v21), &v21);
@@ -146,6 +153,7 @@ void triangle_compute_dof(struct triangle *restrict triangle)
 	}
 }
 
+/* function that is 1 at one vertex and 0 at other 2 */
 float triangle_dof(struct triangle *restrict triangle, int vertex, float x, float y)
 {
 	struct vec2 vxy;
@@ -161,7 +169,7 @@ void stiffness_add_triangle(struct sparse *restrict A, struct element *restrict 
 {
 	struct triangle *triangle = container_of(element, struct triangle, element);
 
-	/* triangle vertex loops */
+	/* mn: triangle vertex loops */
 	for (int m = 0; m < 3; m++) {
 		struct vertex *vm = element->vertices[m];
 		if (!vm->enabled) {
@@ -177,7 +185,7 @@ void stiffness_add_triangle(struct sparse *restrict A, struct element *restrict 
 			int i = vm->id;
 			int j = vn->id;
 
-			/* xy loops */
+			/* rs: xy loops */
 			for (int r = 0; r < DIM; r++) {
 				for (int s = 0; s < DIM; s++) {
 					float entry = 0;
@@ -198,6 +206,7 @@ void forces_add_triangle(struct vec *restrict b, struct element *restrict elemen
 {
 	struct triangle *triangle = container_of(element, struct triangle, element);
 
+	/* gravity acting on vertex */
 	float third_weight = triangle->area * element->density / 3;
 	for (int n = 0; n < 3; n++) {
 		struct vertex *v = element->vertices[n];

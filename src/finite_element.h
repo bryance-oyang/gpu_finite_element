@@ -26,8 +26,11 @@ struct vis;
 /* Ac = b */
 struct finite_element_problem {
 	struct mesh *mesh;
+	/** stiffness */
 	struct sparse A;
+	/** forces */
 	struct vec b;
+	/** solution */
 	struct vec c;
 
 #ifdef GPU_COMPUTE

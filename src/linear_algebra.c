@@ -143,6 +143,7 @@ static int sparse_insert(struct sparse *restrict S, int idx, int row,
 	return 0;
 }
 
+/* S[row][col] += entry or = entry if not existent */
 int sparse_add(struct sparse *restrict S, int row, int col, float entry)
 {
 	int found, idx;
@@ -313,15 +314,19 @@ int sparse_conj_grad(struct sparse *restrict A, struct vec *restrict b,
 			break;
 		}
 
+		/* dAd */
 		sparse_mult_vec(A, &d, &A_d);
 		dAd = vec_dot(&d, &A_d);
 
+		/* Ad = alpha Ad; d = alpha d; */
 		alpha = old_r2 / dAd;
-
+		vec_scale(alpha, &A_d);
 		vec_scale(alpha, &d);
+
+		/* c += alpha d */
 		vec_add(&d, c, c);
 
-		vec_scale(alpha, &A_d);
+		/* r -= alpha Ad */
 		vec_sub(&r, &A_d, &r);
 
 		beta = vec_dot(&r, &r) / old_r2;

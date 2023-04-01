@@ -20,8 +20,11 @@
 struct mesh;
 struct vis;
 
+/** A_{row[k], col[k]} = A[k] */
 struct sparse {
+	/** number of nonzero matrix elements */
 	int len;
+	/** allocated memory in bytes */
 	int size;
 	int32_t *row;
 	int32_t *col;
