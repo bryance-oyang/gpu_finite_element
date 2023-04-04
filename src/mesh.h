@@ -29,12 +29,14 @@ struct vertex {
 
 struct edge {
 	struct ht_node node;
+
 	bool is_boundary;
 	struct vertex *vertices[2];
 };
 
 struct face {
 	struct ht_node node;
+
 	bool is_boundary;
 	struct vertex *vertices[4];
 };
@@ -45,7 +47,9 @@ struct element {
 
 	int nvertices;
 	struct vertex *vertices[ELEMENT_MAX_VERTICES];
+	int nedges;
 	struct edge *edges[ELEMENT_MAX_EDGES];
+	int nfaces;
 	struct face *faces[ELEMENT_MAX_FACES];
 
 	float density;
@@ -65,14 +69,7 @@ struct mesh {
 	int nenabled;
 	struct vertex *vertices;
 
-	int nedges;
-	int edges_size;
-	struct edge *edges;
 	struct ht edges_table;
-
-	int nfaces;
-	int faces_size;
-	struct face *faces;
 	struct ht faces_table;
 
 	int nelements;
@@ -90,7 +87,7 @@ struct triangle {
 int mesh_init(struct mesh *restrict mesh);
 void mesh_destroy(struct mesh *restrict mesh);
 struct vertex *mesh_add_vertex(struct mesh *restrict mesh, float x, float y, bool enabled);
-struct edge *mesh_add_edge(struct mesh *restrict mesh);
+struct edge *mesh_add_edge(struct mesh *restrict mesh, struct vertex *v0, struct vertex *v1);
 void mesh_assign_vertex_ids(struct mesh *restrict mesh);
 
 struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0,

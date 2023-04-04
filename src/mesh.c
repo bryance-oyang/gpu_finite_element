@@ -12,12 +12,14 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 
 #include "mesh.h"
 #include "container_of.h"
 
-char hash_buf[256];
+#define HBUF_LEN 256
+char hash_buf[HBUF_LEN];
 
 static struct element_vtable triangle_vtable = {
 	.stiffness_add = stiffness_add_triangle,
@@ -34,20 +36,6 @@ int mesh_init(struct mesh *restrict mesh)
 		goto err_vertices;
 	}
 
-	mesh->nedges = 0;
-	mesh->edges_size = 64;
-	mesh->edges = malloc(mesh->edges_size * sizeof(*mesh->edges));
-	if (mesh->edges == NULL) {
-		goto err_edges;
-	}
-
-	mesh->nfaces = 0;
-	mesh->faces_size = 32;
-	mesh->faces = malloc(mesh->faces_size * sizeof(*mesh->faces));
-	if (mesh->faces == NULL) {
-		goto err_faces;
-	}
-
 	mesh->nelements = 0;
 	mesh->elements_size = 128;
 	mesh->elements = malloc(mesh->elements_size * sizeof(*mesh->elements));
@@ -56,13 +44,21 @@ int mesh_init(struct mesh *restrict mesh)
 	}
 	mesh->nenabled = 0;
 
+	if (ht_init(&mesh->edges_table) != 0) {
+		goto err_edges_table;
+	}
+
+	if (ht_init(&mesh->faces_table) != 0) {
+		goto err_faces_table;
+	}
+
 	return 0;
 
+err_faces_table:
+	ht_destroy(&mesh->edges_table);
+err_edges_table:
+	free(mesh->elements);
 err_elements:
-	free(mesh->faces);
-err_faces:
-	free(mesh->edges);
-err_edges:
 	free(mesh->vertices);
 err_vertices:
 	return -1;
@@ -71,13 +67,19 @@ err_vertices:
 void mesh_destroy(struct mesh *restrict mesh)
 {
 	free(mesh->vertices);
-	free(mesh->edges);
-	free(mesh->faces);
 
 	for (int i = 0; i < mesh->nelements; i++) {
 		free(mesh->elements[i]);
 	}
 	free(mesh->elements);
+
+	ht_destroy(&mesh->edges_table);
+	ht_destroy(&mesh->faces_table);
+}
+
+static inline int get_vertex_idx(struct mesh *mesh, struct vertex *v)
+{
+	return v - mesh->vertices;
 }
 
 struct vertex *mesh_add_vertex(struct mesh *restrict mesh, float x, float y, bool enabled)
@@ -106,23 +108,81 @@ struct vertex *mesh_add_vertex(struct mesh *restrict mesh, float x, float y, boo
 	return &mesh->vertices[idx];
 }
 
-struct edge *mesh_add_edge(struct mesh *restrict mesh)
+static struct edge *alloc_new_edge()
 {
-	if (mesh->nedges == mesh->edges_size) {
-		int size = mesh->edges_size * 2;
-		void *tmp = realloc(mesh->edges, size * sizeof(*mesh->edges));
-		if (tmp == NULL) {
-			return NULL;
-		}
+	struct edge *edge = malloc(sizeof(*edge));
+	if (edge == NULL) {
+		return NULL;
+	}
+	ht_node_init(&edge->node);
+	return edge;
+}
 
-		mesh->edges = tmp;
-		mesh->edges_size = size;
+/**
+ * find edge given v0, v1. v0 and v1 will be modified so they are sorted by
+ * increasing index (v0_idx < v1_idx). if pprev is not NULL, set to hash table
+ * node so that (*pprev)->next is the position to insert edge if not found
+ */
+static struct edge *find_edge(struct mesh *restrict mesh,
+	struct vertex **v0, struct vertex **v1, struct ht_node **pprev)
+{
+	/* order v0, v1 by index */
+	int v0_idx = get_vertex_idx(mesh, *v0);
+	int v1_idx = get_vertex_idx(mesh, *v1);
+	if (v0_idx > v1_idx) {
+		int tmp = v0_idx;
+		v0_idx = v1_idx;
+		v1_idx = tmp;
+
+		struct vertex *tmp2 = *v0;
+		*v0 = *v1;
+		*v1 = tmp2;
 	}
 
-	mesh->nedges++;
-	int idx = mesh->nedges - 1;
+	/* key for hash table */
+	if (snprintf(hash_buf, HBUF_LEN, "%d_%d", v0_idx, v1_idx) >= HBUF_LEN) {
+		return NULL;
+	}
+	unsigned int key = knuth_hash(hash_buf);
 
-	return &mesh->edges[idx];
+	/* find edge in hash table: traverse linked list until equality match */
+	struct ht_node *cur, *prev;
+	struct edge *edge = NULL;
+	ht_for_each(&mesh->edges_table, cur, prev, key) {
+		struct edge *tmp = container_of(cur, struct edge, node);
+		if (tmp->vertices[0] == *v0 && tmp->vertices[1] == *v1) {
+			edge = tmp;
+			break;
+		}
+	}
+
+	if (pprev != NULL) {
+		*pprev = prev;
+	}
+	return edge;
+}
+
+struct edge *mesh_add_edge(struct mesh *restrict mesh, struct vertex *v0, struct vertex *v1)
+{
+	struct ht_node *prev;
+	struct edge *edge = find_edge(mesh, &v0, &v1, &prev);
+
+	if (edge == NULL) {
+		/* not found in ht */
+		if ((edge = alloc_new_edge(mesh)) == NULL) {
+			return NULL;
+		}
+		prev->next = &edge->node;
+
+		edge->is_boundary = true;
+		edge->vertices[0] = v0;
+		edge->vertices[1] = v1;
+	} else {
+		/* cannot be boundary edge if another triangle shares edge */
+		edge->is_boundary = false;
+	}
+
+	return edge;
 }
 
 /* assign matrix indices: only enabled vertices will enter the matrix */
@@ -165,6 +225,13 @@ struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0
 
 	triangle->element.density = density;
 	triangle->element.elasticity = elasticity;
+
+	/*
+	triangle->element.nedges = 3;
+	triangle->element.edges[0] = mesh_add_edge(mesh, v0, v1);
+	triangle->element.edges[1] = mesh_add_edge(mesh, v1, v2);
+	triangle->element.edges[2] = mesh_add_edge(mesh, v2, v0);
+	*/
 
 	triangle_compute_area(triangle);
 	triangle_compute_dof(triangle);
@@ -248,9 +315,11 @@ void stiffness_add_triangle(struct sparse *restrict A, struct element *restrict 
 				for (int s = 0; s < DIM; s++) {
 					float entry = 0;
 					if (r == s) {
+						/* (D_i u_j) (D^i u^j) */
 						entry += vec2_dot(&triangle->dof_grad[m], &triangle->dof_grad[n]);
 					}
-					entry += triangle->dof_grad[m].x[r] * triangle->dof_grad[n].x[s];
+					/* D_i u_j D^j u_i */
+					entry += triangle->dof_grad[m].x[s] * triangle->dof_grad[n].x[r];
 
 					entry *= triangle->area * element->elasticity / 2;
 					sparse_add(A, DIM*i + r, DIM*j + s, entry);

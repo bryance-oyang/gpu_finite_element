@@ -2,10 +2,12 @@
 #define HASH_TABLE_H
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include "container_of.h"
 
-#define HT_SIZE (1 << 16)
+#define HT_BITS 16
+#define HT_SIZE (1 << (HT_BITS))
 
 struct ht_node {
 	struct ht_node *next;
@@ -34,6 +36,8 @@ struct ht {
 	} while (0);
 
 int ht_init(struct ht *ht);
-unsigned int knuth_hash(const char *str);
+void ht_destroy(struct ht *ht);
+void ht_node_init(struct ht_node *node);
+uint32_t knuth_hash(const char *str);
 
 #endif /* HASH_TABLE_H */
