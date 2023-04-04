@@ -2,6 +2,9 @@
 GPU accelerated structural stress analysis using the finite element method and
 CUDA: a rudimentary proof of concept.
 
+Also has CPU-only version without CUDA
+dependency.
+
 ![beam.png](beam.png)
 
 ## Compiling
