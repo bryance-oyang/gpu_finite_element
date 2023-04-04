@@ -302,7 +302,7 @@ int sparse_conj_grad(struct sparse *restrict A, struct vec *restrict b,
 	for (int k = 1; k <= c->dim; k++) {
 #ifdef ANIMATE
 		mesh_scalar_stress(mesh, c);
-		vis_fill(vis, mesh);
+		vis_fill(vis, mesh, c);
 		vis_send(vis);
 		usleep(15000);
 #else /* ANIMATE */

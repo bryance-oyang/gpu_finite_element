@@ -13,6 +13,7 @@
 
 #include <math.h>
 
+#include "linear_algebra.h"
 #include "visualize.h"
 #include "mesh.h"
 #include "ws_ctube.h"
@@ -64,7 +65,7 @@ static int number_cmp(const void *a, const void *b)
 	return (aa > bb) - (aa < bb);
 }
 
-void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
+void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *restrict c)
 {
 	float min_xy = FLT_MAX;
 	float max_xy = -FLT_MAX;
@@ -73,8 +74,9 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 	for (int i = 0; i < mesh->nelements; i++) {
 		for (int j = 0; j < 3; j++) {
 			struct vertex *v = mesh->elements[i]->vertices[j];
+			int idx = v->id;
 			for (int k = 0; k < DIM; k++) {
-				float coord = v->pos.x[k];
+				float coord = v->pos.x[k] + c->x[DIM*idx + k];
 				if (coord < min_xy) {
 					min_xy = coord;
 				}
@@ -99,6 +101,7 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 	for (int i = 0; i < mesh->nelements; i++) {
 		for (int j = 0; j < 3; j++) {
 			struct vertex *v = mesh->elements[i]->vertices[j];
+			int idx = v->id;
 			for (int k = 0; k < DIM; k++) {
 				int32_t Lo, Hi;
 				if (k == 0) {
@@ -111,7 +114,7 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh)
 					Hi = 0;
 				}
 
-				float coord = v->pos.x[k];
+				float coord = v->pos.x[k] + c->x[DIM*idx + k];
 				vis->data[i*(3*DIM + 1) + j*DIM + k] = lin_scale(coord, min_xy - 0.1*fabsf(min_xy), max_xy + 0.1*fabsf(max_xy), Lo, Hi);
 			}
 		}

@@ -38,7 +38,7 @@ int main()
 
 	printf("loading...\n");
 	fflush(stdout);
-	load_obj("../obj/beam.obj", &mesh);
+	load_obj("../obj/beam.obj", &mesh, 10000);
 	for (int i = 0; i < mesh.nvertices; i++) {
 		float x = mesh.vertices[i].pos.x[0];
 		//float y = mesh.vertices[i].pos.x[1];
@@ -75,7 +75,7 @@ int main()
 #endif /* GPU_COMPUTE */
 	fflush(stdout);
 
-	vis_fill(&vis, &mesh);
+	vis_fill(&vis, &mesh, &problem.c);
 	for (;;) {
 		vis_send(&vis);
 		sleep(1);

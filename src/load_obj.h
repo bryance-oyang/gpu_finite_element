@@ -18,7 +18,7 @@
 
 #include "mesh.h"
 
-int load_obj(char *filename, struct mesh *mesh)
+int load_obj(char *filename, struct mesh *mesh, int elasticity)
 {
 	FILE *file = fopen(filename, "r");
 	if (file == NULL) {
@@ -37,7 +37,7 @@ int load_obj(char *filename, struct mesh *mesh)
 		} else if (sscanf(line, "f %d/%d/%d %d/%d/%d %d/%d/%d", &v0, &_v0, &v0_, &v1, &_v1, &v1_, &v2, &_v2, &v2_) == 9) {
 			mesh_add_triangle(mesh, &mesh->vertices[v0-1],
 				&mesh->vertices[v1-1], &mesh->vertices[v2-1],
-				1, 1);
+				1, elasticity);
 		}
 	}
 

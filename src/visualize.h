@@ -16,6 +16,7 @@
 #include <stdlib.h>
 
 struct mesh;
+struct vec;
 
 struct vis {
 	struct ws_ctube *ctube;
@@ -25,7 +26,7 @@ struct vis {
 
 int vis_init(struct vis *restrict vis, struct mesh *restrict mesh);
 void vis_destroy(struct vis *restrict vis);
-void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh);
+void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *restrict c);
 void vis_send(struct vis *restrict vis);
 
 #endif /* VISUALIZE_H */
