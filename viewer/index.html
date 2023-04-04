@@ -26,7 +26,6 @@
 
       canvas.setAttribute("width", img_width);
       canvas.setAttribute("height", img_height);
-
     }
 
     function setup_draw() {
@@ -90,7 +89,6 @@
       };
 
       websocket.onopen = (event) => {console.log("connected");};
-
       websocket.onclose = (event) => {
         setTimeout(setup_draw, 1000);
       };
