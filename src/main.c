@@ -38,7 +38,7 @@ int main()
 
 	printf("loading...\n");
 	fflush(stdout);
-	load_obj("../obj/beam.obj", &mesh, 10000);
+	load_obj("../obj/beam.obj", &mesh, 36749);
 	for (int i = 0; i < mesh.nvertices; i++) {
 		float x = mesh.vertices[i].pos.x[0];
 		//float y = mesh.vertices[i].pos.x[1];

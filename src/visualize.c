@@ -93,8 +93,8 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 	}
 	/* sort and get percentile of stresses by index */
 	qsort(stresses, mesh->nelements, sizeof(*stresses), number_cmp);
-	float min_stress = stresses[(int)(0.05 * (mesh->nelements - 1))];
-	float max_stress = stresses[(int)(0.95 * (mesh->nelements - 1))];
+	float min_stress = stresses[(int)(0.01 * (mesh->nelements - 1))];
+	float max_stress = stresses[(int)(0.99 * (mesh->nelements - 1))];
 
 	/* store coordinates and stresses of all triangles in the format
 	 * x0,y0,x1,y1,x2,y2,stress */
