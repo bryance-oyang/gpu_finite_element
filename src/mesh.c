@@ -17,6 +17,8 @@
 #include "mesh.h"
 #include "container_of.h"
 
+char hash_buf[256];
+
 static struct element_vtable triangle_vtable = {
 	.stiffness_add = stiffness_add_triangle,
 	.forces_add = forces_add_triangle,
@@ -26,35 +28,72 @@ static struct element_vtable triangle_vtable = {
 int mesh_init(struct mesh *restrict mesh)
 {
 	mesh->nvertices = 0;
-	mesh->vertices = NULL;
+	mesh->vertices_size = 128;
+	mesh->vertices = malloc(mesh->vertices_size * sizeof(*mesh->vertices));
+	if (mesh->vertices == NULL) {
+		goto err_vertices;
+	}
+
+	mesh->nedges = 0;
+	mesh->edges_size = 64;
+	mesh->edges = malloc(mesh->edges_size * sizeof(*mesh->edges));
+	if (mesh->edges == NULL) {
+		goto err_edges;
+	}
+
+	mesh->nfaces = 0;
+	mesh->faces_size = 32;
+	mesh->faces = malloc(mesh->faces_size * sizeof(*mesh->faces));
+	if (mesh->faces == NULL) {
+		goto err_faces;
+	}
+
 	mesh->nelements = 0;
-	mesh->elements = NULL;
+	mesh->elements_size = 128;
+	mesh->elements = malloc(mesh->elements_size * sizeof(*mesh->elements));
+	if (mesh->elements == NULL) {
+		goto err_elements;
+	}
 	mesh->nenabled = 0;
+
 	return 0;
+
+err_elements:
+	free(mesh->faces);
+err_faces:
+	free(mesh->edges);
+err_edges:
+	free(mesh->vertices);
+err_vertices:
+	return -1;
 }
 
 void mesh_destroy(struct mesh *restrict mesh)
 {
-	if (mesh->vertices != NULL) {
-		free(mesh->vertices);
-		mesh->vertices = NULL;
+	free(mesh->vertices);
+	free(mesh->edges);
+	free(mesh->faces);
+
+	for (int i = 0; i < mesh->nelements; i++) {
+		free(mesh->elements[i]);
 	}
-	if (mesh->elements != NULL) {
-		for (int i = 0; i < mesh->nelements; i++) {
-			free(mesh->elements[i]);
-		}
-		free(mesh->elements);
-		mesh->elements = NULL;
-	}
+	free(mesh->elements);
 }
 
 struct vertex *mesh_add_vertex(struct mesh *restrict mesh, float x, float y, bool enabled)
 {
-	mesh->nvertices++;
-	mesh->vertices = realloc(mesh->vertices, mesh->nvertices * sizeof(*mesh->vertices));
-	if (mesh->vertices == NULL) {
-		return NULL;
+	if (mesh->nvertices == mesh->vertices_size) {
+		int size = mesh->vertices_size * 2;
+		void *tmp = realloc(mesh->vertices, size * sizeof(*mesh->vertices));
+		if (tmp == NULL) {
+			return NULL;
+		}
+
+		mesh->vertices = tmp;
+		mesh->vertices_size = size;
 	}
+
+	mesh->nvertices++;
 	int idx = mesh->nvertices - 1;
 
 	mesh->vertices[idx].pos.x[0] = x;
@@ -65,6 +104,40 @@ struct vertex *mesh_add_vertex(struct mesh *restrict mesh, float x, float y, boo
 	}
 
 	return &mesh->vertices[idx];
+}
+
+struct edge *mesh_add_edge(struct mesh *restrict mesh)
+{
+	if (mesh->nedges == mesh->edges_size) {
+		int size = mesh->edges_size * 2;
+		void *tmp = realloc(mesh->edges, size * sizeof(*mesh->edges));
+		if (tmp == NULL) {
+			return NULL;
+		}
+
+		mesh->edges = tmp;
+		mesh->edges_size = size;
+	}
+
+	mesh->nedges++;
+	int idx = mesh->nedges - 1;
+
+	return &mesh->edges[idx];
+}
+
+/* assign matrix indices: only enabled vertices will enter the matrix */
+void mesh_assign_vertex_ids(struct mesh *restrict mesh)
+{
+	int next_id = 0;
+
+	for (int i = 0; i < mesh->nvertices; i++) {
+		if (mesh->vertices[i].enabled) {
+			mesh->vertices[i].id = next_id;
+			next_id++;
+		} else {
+			mesh->vertices[i].id = -1;
+		}
+	}
 }
 
 struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0,
@@ -97,21 +170,6 @@ struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0
 	triangle_compute_dof(triangle);
 
 	return triangle;
-}
-
-/* assign matrix indices: only enabled vertices will enter the matrix */
-void mesh_assign_vertex_ids(struct mesh *restrict mesh)
-{
-	int next_id = 0;
-
-	for (int i = 0; i < mesh->nvertices; i++) {
-		if (mesh->vertices[i].enabled) {
-			mesh->vertices[i].id = next_id;
-			next_id++;
-		} else {
-			mesh->vertices[i].id = -1;
-		}
-	}
 }
 
 void triangle_compute_area(struct triangle *restrict triangle)

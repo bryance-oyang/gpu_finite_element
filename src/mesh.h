@@ -14,15 +14,29 @@
 #define MESH_H
 
 #include <stdbool.h>
-
+#include "hash_table.h"
 #include "linear_algebra.h"
 
 #define ELEMENT_MAX_VERTICES 8
+#define ELEMENT_MAX_EDGES 12
+#define ELEMENT_MAX_FACES 8
 
 struct vertex {
 	struct vec2 pos;
 	int id;
 	bool enabled;
+};
+
+struct edge {
+	struct ht_node node;
+	bool is_boundary;
+	struct vertex *vertices[2];
+};
+
+struct face {
+	struct ht_node node;
+	bool is_boundary;
+	struct vertex *vertices[4];
 };
 
 struct element {
@@ -31,6 +45,8 @@ struct element {
 
 	int nvertices;
 	struct vertex *vertices[ELEMENT_MAX_VERTICES];
+	struct edge *edges[ELEMENT_MAX_EDGES];
+	struct face *faces[ELEMENT_MAX_FACES];
 
 	float density;
 	float elasticity;
@@ -43,27 +59,42 @@ struct element_vtable {
 	void (*scalar_stress)(struct vec *restrict c, struct element *restrict element);
 };
 
-struct triangle {
-	struct element element;
-	float area;
-	struct vec2 dof_grad[3];
-};
-
 struct mesh {
 	int nvertices;
+	int vertices_size;
 	int nenabled;
 	struct vertex *vertices;
 
+	int nedges;
+	int edges_size;
+	struct edge *edges;
+	struct ht edges_table;
+
+	int nfaces;
+	int faces_size;
+	struct face *faces;
+	struct ht faces_table;
+
 	int nelements;
+	int elements_size;
 	struct element **elements;
+};
+
+struct triangle {
+	struct element element;
+
+	float area;
+	struct vec2 dof_grad[3];
 };
 
 int mesh_init(struct mesh *restrict mesh);
 void mesh_destroy(struct mesh *restrict mesh);
 struct vertex *mesh_add_vertex(struct mesh *restrict mesh, float x, float y, bool enabled);
+struct edge *mesh_add_edge(struct mesh *restrict mesh);
+void mesh_assign_vertex_ids(struct mesh *restrict mesh);
+
 struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0,
 	struct vertex *v1, struct vertex *v2, float density, float elasticity);
-void mesh_assign_vertex_ids(struct mesh *restrict mesh);
 
 void triangle_compute_area(struct triangle *restrict triangle);
 void triangle_compute_dof(struct triangle *restrict triangle);

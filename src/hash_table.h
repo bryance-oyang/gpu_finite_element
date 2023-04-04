@@ -15,27 +15,6 @@ struct ht {
 	struct ht_node table[HT_SIZE];
 };
 
-int ht_init(struct ht *ht)
-{
-	return 0;
-}
-
-void ht_destroy(struct ht *ht)
-{
-	struct ht_node *prev, *cur;
-	for (int i = 0; i < HT_SIZE; i++) {
-		if (ht->table[i].next == NULL) {
-			continue;
-		}
-		cur = ht->table[i].next;
-		while(cur != NULL) {
-			prev = cur;
-			cur = cur->next;
-			free(prev);
-		}
-	}
-}
-
 #define ht_for_each(ht, cur, prev, key) \
 	for (prev = &(ht)->table[(key)], cur = (ht)->table[(key)].next; cur != NULL; prev = cur, cur = cur->next)
 
@@ -54,14 +33,7 @@ void ht_destroy(struct ht *ht)
 		} \
 	} while (0);
 
-unsigned int knuth_hash(const char *str)
-{
-	unsigned int len = strlen(str);
-	unsigned int hash = len;
-	for (unsigned int i = 0; i < len; str++, i++) {
-		hash = ((hash << 5) ^ (hash >> 27)) ^ (*str);
-	}
-	return hash;
-}
+int ht_init(struct ht *ht);
+unsigned int knuth_hash(const char *str);
 
 #endif /* HASH_TABLE_H */
