@@ -73,10 +73,16 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 	/* determine min/max of coordinates */
 	for (int i = 0; i < mesh->nelements; i++) {
 		for (int j = 0; j < 3; j++) {
-			struct vertex *v = mesh->elements[i]->vertices[j];
+			struct vertex *restrict v = mesh->elements[i]->vertices[j];
 			int idx = v->id;
+			float coord;
 			for (int k = 0; k < DIM; k++) {
-				float coord = v->pos.x[k] + c->x[DIM*idx + k];
+				if (v->enabled) {
+					coord = v->pos.x[k] + c->x[DIM*idx + k];
+				} else {
+					coord = v->pos.x[k];
+				}
+
 				if (coord < min_xy) {
 					min_xy = coord;
 				}
@@ -100,8 +106,9 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 	 * x0,y0,x1,y1,x2,y2,stress */
 	for (int i = 0; i < mesh->nelements; i++) {
 		for (int j = 0; j < 3; j++) {
-			struct vertex *v = mesh->elements[i]->vertices[j];
+			struct vertex *restrict v = mesh->elements[i]->vertices[j];
 			int idx = v->id;
+			float coord;
 			for (int k = 0; k < DIM; k++) {
 				int32_t Lo, Hi;
 				if (k == 0) {
@@ -114,7 +121,11 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 					Hi = 0;
 				}
 
-				float coord = v->pos.x[k] + c->x[DIM*idx + k];
+				if (v->enabled) {
+					coord = v->pos.x[k] + c->x[DIM*idx + k];
+				} else {
+					coord = v->pos.x[k];
+				}
 				vis->data[i*(3*DIM + 1) + j*DIM + k] = lin_scale(coord, min_xy - 0.1*fabsf(min_xy), max_xy + 0.1*fabsf(max_xy), Lo, Hi);
 			}
 		}

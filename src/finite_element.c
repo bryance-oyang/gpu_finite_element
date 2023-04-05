@@ -29,13 +29,26 @@ int fep_init(struct finite_element_problem *restrict p, struct mesh *restrict me
 	if (vec_init(&p->c, DIM * mesh->nenabled) != 0) {
 		goto err_noc;
 	}
-
 	p->mesh = mesh;
+
+	struct timespec start, end;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+
 	mesh_assign_vertex_ids(mesh);
 	mesh_construct_problem(mesh, &p->A, &p->b);
 
+	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+	float msec = (end.tv_sec - start.tv_sec)*1e3 + (end.tv_nsec - start.tv_nsec)*1e-6;
+	printf("benchmarked mesh build time: %g ms\n", msec);
+
+	clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+
 	sparse_sort(&p->A);
 	sparse_consolidate(&p->A);
+
+	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+	msec = (end.tv_sec - start.tv_sec)*1e3 + (end.tv_nsec - start.tv_nsec)*1e-6;
+	printf("benchmarked sparse sort time: %g ms\n", msec);
 
 #ifdef GPU_COMPUTE
 	if (cuda_init(p) != 0) {
