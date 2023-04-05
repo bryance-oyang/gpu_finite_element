@@ -34,6 +34,9 @@ int fep_init(struct finite_element_problem *restrict p, struct mesh *restrict me
 	mesh_assign_vertex_ids(mesh);
 	mesh_construct_problem(mesh, &p->A, &p->b);
 
+	sparse_sort(&p->A);
+	sparse_consolidate(&p->A);
+
 #ifdef GPU_COMPUTE
 	if (cuda_init(p) != 0) {
 		goto err_nocuda;

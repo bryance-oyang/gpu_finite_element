@@ -33,8 +33,9 @@ struct sparse {
 
 int sparse_init(struct sparse *restrict S);
 void sparse_destroy(struct sparse *restrict S);
-int sparse_get_idx(struct sparse *restrict S, int row, int col, int *found);
 int sparse_add(struct sparse *restrict S, int row, int col, float entry);
+void sparse_sort(struct sparse *restrict S);
+void sparse_consolidate(struct sparse *restrict S);
 
 struct vec {
 	int dim;

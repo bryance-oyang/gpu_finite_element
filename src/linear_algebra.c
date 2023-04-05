@@ -72,92 +72,116 @@ void sparse_destroy(struct sparse *restrict S)
 	free(S->A);
 }
 
-/* returns index of element at (row,col) or the index it should be inserted at */
-int sparse_get_idx(struct sparse *restrict S, int row, int col, int *found)
-{
-	int lo, mid, hi, cmp;
-
-	if (S->len == 0) {
-		if (found != NULL) {
-			*found = 0;
-		}
-		return 0;
-	}
-
-	lo = 0;
-	hi = S->len;
-	while (hi - lo > 1) {
-		mid = (lo + hi) / 2;
-
-		cmp = sparse_row_col_cmp(row, col, S->row[mid], S->col[mid]);
-		if (cmp < 0) {
-			hi = mid;
-		} else if (cmp > 0) {
-			lo = mid;
-		} else {
-			if (found != NULL) {
-				*found = 1;
-			}
-			return mid;
-		}
-	}
-
-	int cmp_result = sparse_row_col_cmp(row, col, S->row[lo], S->col[lo]);
-	if (cmp_result < 0) {
-		if (found != NULL) {
-			*found = 0;
-		}
-		return lo;
-	} else if (cmp_result > 0) {
-		if (found != NULL) {
-			*found = 0;
-		}
-		return lo + 1;
-	} else {
-		if (found != NULL) {
-			*found = 1;
-		}
-		return lo;
-	}
-}
-
 /* insert nonexistent */
-static int sparse_insert(struct sparse *restrict S, int idx, int row,
-	int col, float entry)
+int sparse_add(struct sparse *restrict S, int row, int col, float entry)
 {
 	if (S->len == S->size) {
-		S->size *= 2;
-		S->row = realloc(S->row, S->size * sizeof(*S->row));
-		S->col = realloc(S->col, S->size * sizeof(*S->col));
-		S->A = realloc(S->A, S->size * sizeof(*S->A));
+		int new_size = 2 * S->size;
+		void *tmp_row, *tmp_col, *tmp_A;
 
-		if (S->row == NULL || S->col == NULL || S->A == NULL) {
+		if ((tmp_row = realloc(S->row, new_size * sizeof(*S->row))) == NULL) {
 			return -1;
 		}
+		S->row = tmp_row;
+
+		if ((tmp_col = realloc(S->col, new_size * sizeof(*S->col))) == NULL) {
+			return -1;
+		}
+		S->col = tmp_col;
+
+		if ((tmp_A = realloc(S->A, new_size * sizeof(*S->A))) == NULL) {
+			return -1;
+		}
+		S->A = tmp_A;
+
+		S->size = new_size;
 	}
 
-	memmove(&S->row[idx + 1], &S->row[idx], (S->len - idx) * sizeof(*S->row));
-	memmove(&S->col[idx + 1], &S->col[idx], (S->len - idx) * sizeof(*S->col));
-	memmove(&S->A[idx + 1], &S->A[idx], (S->len - idx) * sizeof(*S->A));
-	S->row[idx] = row;
-	S->col[idx] = col;
-	S->A[idx] = entry;
+	S->row[S->len] = row;
+	S->col[S->len] = col;
+	S->A[S->len] = entry;
 	S->len++;
+
 	return 0;
 }
 
-/* S[row][col] += entry or = entry if not existent */
-int sparse_add(struct sparse *restrict S, int row, int col, float entry)
+static inline void swap_int(int *a, int *b)
 {
-	int found, idx;
+	int tmp = *a;
+	*a = *b;
+	*b = tmp;
+}
 
-	idx = sparse_get_idx(S, row, col, &found);
-	if (found) {
-		S->A[idx] += entry;
-		return 0;
-	} else {
-		return sparse_insert(S, idx, row, col, entry);
+static inline void swap_float(float *a, float *b)
+{
+	float tmp = *a;
+	*a = *b;
+	*b = tmp;
+}
+
+static int sparse_partition(struct sparse *restrict S, int lo, int hi)
+{
+	int i, j;
+	int prow = S->row[hi - 1];
+	int pcol = S->col[hi - 1];
+
+	for (i = lo, j = lo; j < hi - 1; j++) {
+		if (sparse_row_col_cmp(S->row[j], S->col[j], prow, pcol) < 0) {
+			swap_int(&S->row[i], &S->row[j]);
+			swap_int(&S->col[i], &S->col[j]);
+			swap_float(&S->A[i], &S->A[j]);
+			i++;
+		}
 	}
+
+	swap_int(&S->row[i], &S->row[hi - 1]);
+	swap_int(&S->col[i], &S->col[hi - 1]);
+	swap_float(&S->A[i], &S->A[hi - 1]);
+	return i;
+}
+
+static void sparse_qsort(struct sparse *restrict S, int lo, int hi)
+{
+	if (hi - lo < 2) {
+		return;
+	}
+
+	int mid = sparse_partition(S, lo, hi);
+	sparse_qsort(S, lo, mid);
+	sparse_qsort(S, mid + 1, hi);
+}
+
+void sparse_sort(struct sparse *restrict S)
+{
+	sparse_qsort(S, 0, S->len);
+}
+
+/* S should be sorted: duplicate entries for row, col are summed into one */
+void sparse_consolidate(struct sparse *restrict S)
+{
+	int i, j;
+	int row, col;
+
+	if (S->len < 2) {
+		return;
+	}
+
+	row = S->row[0];
+	col = S->col[0];
+	for (i = 0, j = 1; j < S->len; j++) {
+		if (row == S->row[j] && col == S->col[j]) {
+			S->A[i] += S->A[j];
+		} else {
+			i++;
+			row = S->row[j];
+			col = S->col[j];
+			S->row[i] = row;
+			S->col[i] = col;
+			S->A[i] = S->A[j];
+		}
+	}
+
+	S->len = i + 1;
 }
 
 int vec_init(struct vec *restrict v, int dim)
