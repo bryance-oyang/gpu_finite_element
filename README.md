@@ -51,8 +51,8 @@ $$
 A_{mn} = -\frac{E}{2}\int u_{mj} \nabla_i (\nabla^i u_n^j + \nabla^j u_n^i)\,d^3x\\
 b_m = \int u_{mj}f^j\,d^3x
 $$
-and $A$ (the stiffness matrix) is symmetric (and sparse if $u_m$ was chosen
-well).
+and $A$ (the stiffness matrix) is symmetric with appropriate boundary conditions
+and sparse if $u_m$ was chosen well.
 
 The conjugate gradient method can iteratively solve this for the coefficients
 $c$ and give the discretized solution.
