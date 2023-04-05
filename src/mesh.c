@@ -200,6 +200,24 @@ void mesh_assign_vertex_ids(struct mesh *restrict mesh)
 	}
 }
 
+void mesh_construct_problem(struct mesh *restrict mesh, struct sparse *restrict A, struct vec *b)
+{
+	for (int i = 0; i < mesh->nelements; i++) {
+		mesh->elements[i]->vtable->stiffness_add(A, mesh->elements[i]);
+		mesh->elements[i]->vtable->forces_add(b, mesh->elements[i]);
+	}
+}
+
+void mesh_scalar_stress(struct mesh *restrict mesh, struct vec *restrict c)
+{
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(OMP_NTHREAD)
+#endif
+	for (int i = 0; i < mesh->nelements; i++) {
+		mesh->elements[i]->vtable->scalar_stress(c, mesh->elements[i]);
+	}
+}
+
 struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0,
 	struct vertex *v1, struct vertex *v2, float density, float elasticity)
 {
@@ -372,22 +390,4 @@ void triangle_scalar_stress(struct vec *restrict c, struct element *restrict ele
 	syy += pressure;
 
 	element->scalar_stress = sqrtf(SQR(sxx) + 2*SQR(sxy) + SQR(syy));
-}
-
-void mesh_construct_problem(struct mesh *restrict mesh, struct sparse *restrict A, struct vec *b)
-{
-	for (int i = 0; i < mesh->nelements; i++) {
-		mesh->elements[i]->vtable->stiffness_add(A, mesh->elements[i]);
-		mesh->elements[i]->vtable->forces_add(b, mesh->elements[i]);
-	}
-}
-
-void mesh_scalar_stress(struct mesh *restrict mesh, struct vec *restrict c)
-{
-#ifdef _OPENMP
-#pragma omp parallel for num_threads(OMP_NTHREAD)
-#endif
-	for (int i = 0; i < mesh->nelements; i++) {
-		mesh->elements[i]->vtable->scalar_stress(c, mesh->elements[i]);
-	}
 }
