@@ -126,8 +126,7 @@ int cuda_init(struct finite_element_problem *restrict p)
 		CUSPARSE_SPMV_COO_ALG2,
 		&scratch_size
 	);
-	/* prevent NULL ptr */
-	scratch_size++;
+	scratch_size++; /* CUDA doesn't want NULL: prevent NULL ptr */
 	if (sparse_status != CUSPARSE_STATUS_SUCCESS) {
 		goto err_scratch_size;
 	}

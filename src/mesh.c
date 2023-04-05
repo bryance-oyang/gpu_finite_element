@@ -169,7 +169,7 @@ struct edge *mesh_add_edge(struct mesh *restrict mesh, struct vertex *v0, struct
 
 	if (edge == NULL) {
 		/* not found in ht */
-		if ((edge = alloc_new_edge(mesh)) == NULL) {
+		if ((edge = alloc_new_edge()) == NULL) {
 			return NULL;
 		}
 		prev->next = &edge->node;

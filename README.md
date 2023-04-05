@@ -1,9 +1,8 @@
 # gpu_finite_element
-GPU accelerated structural stress analysis using the finite element method and
-CUDA: a rudimentary proof of concept.
+A rudimentary proof of concept: GPU accelerated structural stress analysis using
+the finite element method and CUDA.
 
-Also has CPU-only version without CUDA
-dependency.
+Also has CPU-only version without CUDA dependency.
 
 ![beam.png](beam.png)
 
@@ -21,7 +20,7 @@ directions, then the strain is
 $$
 s^{ij} = \frac{1}{2}(\nabla^i \psi^j + \nabla^j \psi^i)
 $$
-and for scalar linear elasticity $E$, the stress is
+and for a simple scalar elasticity $E$, the stress is
 $$
 \sigma^{ij} = E s^{ij}
 $$
