@@ -27,6 +27,10 @@ static struct element_vtable triangle_vtable = {
 	.scalar_stress = triangle_scalar_stress,
 };
 
+static struct element_vtable triangle2_vtable = {
+
+};
+
 int mesh_init(struct mesh *restrict mesh)
 {
 	mesh->nvertices = 0;

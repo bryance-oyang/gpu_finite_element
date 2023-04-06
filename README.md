@@ -5,6 +5,7 @@ the finite element method and CUDA.
 Also has CPU-only version without CUDA dependency.
 
 ![beam.png](beam.png)
+*Image: von Mises stress of 2D beam fixed on left and pulled down by gravity*
 
 ## Compiling
 gcc >= v4.7.0, make, POSIX (aka not Windows)
@@ -14,7 +15,18 @@ card for GPU acceleration
 - `make animate`: slow down iterative solver to animate/visualize iterations and
 convergence; non-GPU, CPU-only
 
-## Notes
+```bash
+cd src
+make animate
+./a.out
+```
+```bash
+cd viewer
+python -m http.server
+```
+View at `http://localhost:8000/`.
+
+## Brief notes
 If $\psi^j$ is a small displacement field with $j$ indexing the spatial
 directions, then the strain is
 $$

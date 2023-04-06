@@ -84,6 +84,13 @@ struct triangle {
 	struct vec2 dof_grad[3];
 };
 
+struct triangle2 {
+	struct element element;
+
+	float area;
+	float metric[2][2];
+};
+
 int mesh_init(struct mesh *restrict mesh);
 void mesh_destroy(struct mesh *restrict mesh);
 struct vertex *mesh_add_vertex(struct mesh *restrict mesh, float x, float y, bool enabled);
