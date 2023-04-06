@@ -393,5 +393,5 @@ void triangle_scalar_stress(struct vec *restrict c, struct element *restrict ele
 	sxx += pressure;
 	syy += pressure;
 
-	element->scalar_stress = sqrtf(SQR(sxx) + 2*SQR(sxy) + SQR(syy));
+	element->scalar_stress = sqrtf(1.5 * (SQR(sxx) + 2*SQR(sxy) + SQR(syy)));
 }
