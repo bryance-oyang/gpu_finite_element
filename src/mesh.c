@@ -27,6 +27,30 @@ static struct element_vtable triangle_vtable = {
 	.scalar_stress = triangle_scalar_stress,
 };
 
+/**
+ * each degree of freedom is a0 r^2 + a1 r s + a2 s^2 + a3 r + a4 s + a5
+ * index ordering: vertex, xy, vecind, partial, coeff#
+ */
+
+#define TRIANGLE2_NVERTEX 6
+#define TRIANGLE2_NXY 2
+#define TRIANGLE2_NVECIND 2
+#define TRIANGLE2_NDERIV 2
+#define TRIANGLE2_NCOEFF 6
+#define TRIANGLE2_NDCOEFF 3
+
+static struct canon_triangle2 {
+	int done;
+	/* dof coeff */
+	float a[TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NVECIND][TRIANGLE2_NCOEFF];
+	/* A r + B s + C */
+	float Da[TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NVECIND][TRIANGLE2_NDERIV][TRIANGLE2_NDCOEFF];
+	/* D_i u_{mj} D^i u^j_n*/
+	float I1[TRIANGLE2_NVERTEX][TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NXY][TRIANGLE2_NVECIND][TRIANGLE2_NVECIND][TRIANGLE2_NDERIV][TRIANGLE2_NDERIV];
+	/* D_i u^j_m D_j u^i_n*/
+	float I2[TRIANGLE2_NVERTEX][TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NXY];
+} canon_triangle2;
+
 static struct element_vtable triangle2_vtable = {
 
 };
@@ -394,4 +418,95 @@ void triangle_scalar_stress(struct vec *restrict c, struct element *restrict ele
 	syy += pressure;
 
 	element->scalar_stress = sqrtf(1.5 * (SQR(sxx) + 2*SQR(sxy) + SQR(syy)));
+}
+
+/**
+ * integrates (A r + B s + C) * (D r + E s + F)
+ */
+static float canon_triangle2_integral(float *A, float *D)
+{
+	return
+	(1.0f/12.0f) * (A[0]*D[0] + A[1]*D[1]) +
+	(1.0f/2.0f) * (A[2]*D[2]) +
+	(1.0f/24.0f) * (A[0]*D[1] + A[1]*D[0]) +
+	(1.0f/6.0f) * ((A[0] + A[1])*D[2] + (D[0] + D[1])*A[2]);
+}
+
+static void canon_triangle2_acoeff()
+{
+	int dim = 6;
+	float M[36] = {
+	/*	r^2	rs	s^2	r	s	1 */
+		0,	0,	0,	0,	0,	1,	/* vertex 0 */
+		1,	0,	0,	1,	0,	1,	/* vertex 1 */
+		0,	0,	1,	0,	1,	1,	/* vertex 2 */
+		0.25,	0.25,	0.25,	0.5,	0.5,	1,	/* vertex 3 */
+		0,	0,	0.25,	0,	0.5,	1,	/* vertex 4 */
+		0.25,	0,	0,	0.5,	0,	1	/* vertex 5 */
+	};
+
+	float *inv_M = alloc_inverse(M, dim);
+	for (int i = 0; i < dim; i++) {
+	for (int j = 0; j < dim; j++) {
+	for (int xy = 0; xy < TRIANGLE2_NXY; xy++) {
+		canon_triangle2.a[j][xy][xy][i] = inv_M[i*dim + j];
+	}}}
+	free(inv_M);
+}
+
+static void canon_triangle2_Dacoeff()
+{
+	for (int v = 0; v < TRIANGLE2_NVERTEX; v++) {
+	for (int xy = 0; xy < TRIANGLE2_NXY; xy++) {
+	for (int r = 0; r < TRIANGLE2_NVECIND; r++) {
+		canon_triangle2.Da[v][xy][r][0][0] = 2 * canon_triangle2.a[v][xy][r][0];
+		canon_triangle2.Da[v][xy][r][0][1] = canon_triangle2.a[v][xy][r][1];
+		canon_triangle2.Da[v][xy][r][0][2] = canon_triangle2.a[v][xy][r][3];
+
+		canon_triangle2.Da[v][xy][r][1][0] = canon_triangle2.a[v][xy][r][1];
+		canon_triangle2.Da[v][xy][r][1][1] = 2 * canon_triangle2.a[v][xy][r][2];
+		canon_triangle2.Da[v][xy][r][1][2] = canon_triangle2.a[v][xy][r][4];
+	}}}
+}
+
+static void canon_triangle2_I1()
+{
+	for (int v0 = 0; v0 < TRIANGLE2_NVERTEX; v0++) {
+	for (int v1 = 0; v1 < TRIANGLE2_NVERTEX; v1++) {
+	for (int xy0 = 0; xy0 < TRIANGLE2_NXY; xy0++) {
+	for (int xy1 = 0; xy1 < TRIANGLE2_NXY; xy1++) {
+	for (int r0 = 0; r0 < TRIANGLE2_NVECIND; r0++) {
+	for (int r1 = 0; r1 < TRIANGLE2_NVECIND; r1++) {
+	for (int dr0 = 0; dr0 < TRIANGLE2_NDERIV; dr0++) {
+	for (int dr1 = 0; dr1 < TRIANGLE2_NDERIV; dr1++) {
+		canon_triangle2.I1[v0][v1][xy0][xy1][r0][r1][dr0][dr1] = canon_triangle2_integral(
+			canon_triangle2.Da[v0][xy0][r0][dr0],
+			canon_triangle2.Da[v1][xy1][r1][dr1]
+		);
+	}}}}}}}}
+}
+
+static void canon_triangle2_I2()
+{
+	for (int v0 = 0; v0 < TRIANGLE2_NVERTEX; v0++) {
+	for (int v1 = 0; v1 < TRIANGLE2_NVERTEX; v1++) {
+	for (int xy0 = 0; xy0 < TRIANGLE2_NXY; xy0++) {
+	for (int xy1 = 0; xy1 < TRIANGLE2_NXY; xy1++) {
+	for (int i = 0; i < TRIANGLE2_NVECIND; i++) {
+	for (int j = 0; j < TRIANGLE2_NDERIV; j++) {
+		canon_triangle2.I2[v0][v1][xy0][xy1] += canon_triangle2_integral(
+			canon_triangle2.Da[v0][xy0][i][j],
+			canon_triangle2.Da[v1][xy1][j][i]
+		);
+	}}}}}}
+}
+
+static void canon_triangle2_compute_all()
+{
+	canon_triangle2_acoeff();
+	canon_triangle2_Dacoeff();
+	canon_triangle2_I1();
+	canon_triangle2_I2();
+
+	canon_triangle2.done = 1;
 }
