@@ -105,12 +105,14 @@ void mesh_scalar_stress(struct mesh *restrict mesh, struct vec *restrict c);
 
 struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0,
 	struct vertex *v1, struct vertex *v2, float density, float elasticity);
-void triangle_compute_area(struct triangle *restrict triangle);
-void triangle_compute_dof(struct triangle *restrict triangle);
-float triangle_dof(struct triangle *restrict triangle, int vertex, float x, float y);
-void stiffness_add_triangle(struct sparse *restrict A, struct element *restrict element);
-void forces_add_triangle(struct vec *restrict b, struct element *restrict element);
+void triangle_stiffness_add(struct sparse *restrict A, struct element *restrict element);
+void triangle_forces_add(struct vec *restrict b, struct element *restrict element);
 void triangle_scalar_stress(struct vec *restrict c, struct element *restrict element);
 
+struct triangle *mesh_add_triangle2(struct mesh *restrict mesh, struct vertex *v0,
+	struct vertex *v1, struct vertex *v2, float density, float elasticity);
+void triangle2_stiffness_add(struct sparse *restrict A, struct element *restrict element);
+void triangle2_forces_add(struct vec *restrict b, struct element *restrict element);
+void triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element);
 
 #endif /* MESH_H */

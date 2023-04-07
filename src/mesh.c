@@ -22,8 +22,8 @@
 char hash_buf[HBUF_LEN];
 
 static struct element_vtable triangle_vtable = {
-	.stiffness_add = stiffness_add_triangle,
-	.forces_add = forces_add_triangle,
+	.stiffness_add = triangle_stiffness_add,
+	.forces_add = triangle_forces_add,
 	.scalar_stress = triangle_scalar_stress,
 };
 
@@ -52,7 +52,9 @@ static struct canon_triangle2 {
 } canon_triangle2;
 
 static struct element_vtable triangle2_vtable = {
-
+	.stiffness_add = triangle2_stiffness_add,
+	.forces_add = triangle2_forces_add,
+	.scalar_stress = triangle2_scalar_stress,
 };
 
 int mesh_init(struct mesh *restrict mesh)
@@ -246,6 +248,54 @@ void mesh_scalar_stress(struct mesh *restrict mesh, struct vec *restrict c)
 	}
 }
 
+static void triangle_compute_area(struct triangle *restrict triangle)
+{
+	struct vec2 v10, v20;
+
+	struct vec2 *v0 = &triangle->element.vertices[0]->pos;
+	struct vec2 *v1 = &triangle->element.vertices[1]->pos;
+	struct vec2 *v2 = &triangle->element.vertices[2]->pos;
+
+	/* area = 0.5 * cross product of edges */
+	vec2_sub(v1, v0, &v10);
+	vec2_sub(v2, v0, &v20);
+	triangle->area = fabsf(0.5f * (v10.x[0]*v20.x[1] - v10.x[1]*v20.x[0]));
+}
+
+/**
+ * computes the gradients of functions that are 1 at one vertex and 0 at the
+ * other 2; do this for all 3 vertices
+ */
+static void triangle_compute_dof(struct triangle *restrict triangle)
+{
+	struct vec2 v01, v21;
+
+	for (int i = 0; i < 3; i++) {
+		/* v0 is the vertex where the function will be 1 */
+		struct vec2 *v0 = &triangle->element.vertices[(i+0)%3]->pos;
+		struct vec2 *v1 = &triangle->element.vertices[(i+1)%3]->pos;
+		struct vec2 *v2 = &triangle->element.vertices[(i+2)%3]->pos;
+
+		/* gram schmidt to get perp vector to opposite edge of v0 */
+		vec2_sub(v0, v1, &v01);
+		vec2_sub(v2, v1, &v21);
+		vec2_scale(vec2_dot(&v01, &v21) / vec2_dot(&v21, &v21), &v21);
+		vec2_sub(&v01, &v21, &triangle->dof_grad[(i+0)%3]);
+
+		float s = 1.0f / vec2_dot(&v01, &triangle->dof_grad[(i+0)%3]);
+		vec2_scale(s, &triangle->dof_grad[(i+0)%3]);
+	}
+}
+
+/* function that is 1 at one vertex and 0 at other 2 */
+static float triangle_dof(struct triangle *restrict triangle, int vertex, float x, float y)
+{
+	struct vec2 vxy;
+	vxy.x[0] = x;
+	vxy.x[1] = y;
+	return 1 + vec2_dot(&triangle->dof_grad[vertex], &vxy) - vec2_dot(&triangle->dof_grad[vertex], &triangle->element.vertices[vertex]->pos);
+}
+
 struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0,
 	struct vertex *v1, struct vertex *v2, float density, float elasticity)
 {
@@ -283,54 +333,6 @@ struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0
 	triangle_compute_dof(triangle);
 
 	return triangle;
-}
-
-void triangle_compute_area(struct triangle *restrict triangle)
-{
-	struct vec2 v10, v20;
-
-	struct vec2 *v0 = &triangle->element.vertices[0]->pos;
-	struct vec2 *v1 = &triangle->element.vertices[1]->pos;
-	struct vec2 *v2 = &triangle->element.vertices[2]->pos;
-
-	/* area = 0.5 * cross product of edges */
-	vec2_sub(v1, v0, &v10);
-	vec2_sub(v2, v0, &v20);
-	triangle->area = fabsf(0.5f * (v10.x[0]*v20.x[1] - v10.x[1]*v20.x[0]));
-}
-
-/**
- * computes the gradients of functions that are 1 at one vertex and 0 at the
- * other 2; do this for all 3 vertices
- */
-void triangle_compute_dof(struct triangle *restrict triangle)
-{
-	struct vec2 v01, v21;
-
-	for (int i = 0; i < 3; i++) {
-		/* v0 is the vertex where the function will be 1 */
-		struct vec2 *v0 = &triangle->element.vertices[(i+0)%3]->pos;
-		struct vec2 *v1 = &triangle->element.vertices[(i+1)%3]->pos;
-		struct vec2 *v2 = &triangle->element.vertices[(i+2)%3]->pos;
-
-		/* gram schmidt to get perp vector to opposite edge of v0 */
-		vec2_sub(v0, v1, &v01);
-		vec2_sub(v2, v1, &v21);
-		vec2_scale(vec2_dot(&v01, &v21) / vec2_dot(&v21, &v21), &v21);
-		vec2_sub(&v01, &v21, &triangle->dof_grad[(i+0)%3]);
-
-		float s = 1.0f / vec2_dot(&v01, &triangle->dof_grad[(i+0)%3]);
-		vec2_scale(s, &triangle->dof_grad[(i+0)%3]);
-	}
-}
-
-/* function that is 1 at one vertex and 0 at other 2 */
-float triangle_dof(struct triangle *restrict triangle, int vertex, float x, float y)
-{
-	struct vec2 vxy;
-	vxy.x[0] = x;
-	vxy.x[1] = y;
-	return 1 + vec2_dot(&triangle->dof_grad[vertex], &vxy) - vec2_dot(&triangle->dof_grad[vertex], &triangle->element.vertices[vertex]->pos);
 }
 
 /*
