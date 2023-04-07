@@ -45,9 +45,9 @@ static struct canon_triangle2 {
 	float a[TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NVECIND][TRIANGLE2_NCOEFF];
 	/* A r + B s + C */
 	float Da[TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NVECIND][TRIANGLE2_NDERIV][TRIANGLE2_NDCOEFF];
-	/* D_i u_{mj} D^i u^j_n*/
+	/* D_i u_{mj} D^i u^j_n: the vector and deriv ind are to be contracted with the metric and inv metric resp */
 	float I1[TRIANGLE2_NVERTEX][TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NXY][TRIANGLE2_NVECIND][TRIANGLE2_NVECIND][TRIANGLE2_NDERIV][TRIANGLE2_NDERIV];
-	/* D_i u^j_m D_j u^i_n*/
+	/* D_i u^j_m D_j u^i_n */
 	float I2[TRIANGLE2_NVERTEX][TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NXY];
 } canon_triangle2;
 

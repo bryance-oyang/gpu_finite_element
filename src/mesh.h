@@ -87,8 +87,12 @@ struct triangle {
 struct triangle2 {
 	struct element element;
 
+	/* area = 1/2 |J| */
 	float area;
-	float metric[2][2];
+	/* J[i][j] = dx^i / dr^j */
+	float J[2][2];
+	/* inv_J[i][j] = dr^i / dx^j */
+	float inv_J[2][2];
 };
 
 int mesh_init(struct mesh *restrict mesh);
