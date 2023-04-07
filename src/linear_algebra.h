@@ -63,6 +63,9 @@ void vec2_scale(float scalar, struct vec2 *restrict v);
 float vec2_dot(struct vec2 *a, struct vec2 *b);
 void vec2_normalize(struct vec2 *restrict v);
 
+float det(float *restrict matrix, int dim);
+float *alloc_inverse(float *restrict matrix, int dim);
+
 int sparse_conj_grad(struct sparse *restrict A, struct vec *restrict b,
 	struct vec *restrict c, float tolerance, struct vis *restrict vis,
 	struct mesh *restrict mesh);

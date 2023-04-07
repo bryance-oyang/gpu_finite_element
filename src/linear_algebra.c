@@ -11,6 +11,7 @@
  * @brief non-GPU accelerated and unoptimized versions
  */
 
+#include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -303,6 +304,65 @@ void vec2_normalize(struct vec2 *restrict v)
 {
 	float norm = sqrtf(vec2_dot(v, v));
 	vec2_scale(1.0f/norm, v);
+}
+
+static float cofactor(float *restrict matrix, int dim, int i, int j)
+{
+	float *restrict sub = malloc((dim - 1) * (dim - 1) * sizeof(*sub));
+	if (sub == NULL) {
+		raise(SIGSEGV);
+	}
+
+	for (int ii = 0, iii = 0; ii < dim; ii++) {
+		if (ii == i) {
+			continue;
+		}
+		for (int jj = 0, jjj = 0; jj < dim; jj++) {
+			if (jj == j) {
+				continue;
+			}
+			sub[iii*(dim - 1) + jjj] = matrix[ii*dim + jj];
+			jjj++;
+		}
+		iii++;
+	}
+
+	float sub_det = det(sub, dim - 1);
+	free(sub);
+	return sub_det;
+}
+
+float det(float *restrict matrix, int dim)
+{
+	if (dim == 1) {
+		return *matrix;
+	}
+
+	int sgn = 1;
+	float result = 0;
+	for (int j = 0; j < dim; j++) {
+		result += sgn * matrix[j] * cofactor(matrix, dim, 0, j);
+		sgn *= -1;
+	}
+	return result;
+}
+
+float *alloc_inverse(float *restrict matrix, int dim)
+{
+	float *restrict inverse = malloc(dim * dim * sizeof(*inverse));
+	if (inverse == NULL) {
+		raise(SIGSEGV);
+	}
+
+	float inv_det = 1.0f / det(matrix, dim);
+
+	for (int i = 0; i < dim; i++) {
+		for (int j = 0; j < dim; j++) {
+			inverse[i*dim + j] = cofactor(matrix, dim, j, i) * inv_det;
+		}
+	}
+
+	return inverse;
 }
 
 int sparse_conj_grad(struct sparse *restrict A, struct vec *restrict b,
