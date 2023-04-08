@@ -104,8 +104,9 @@ struct triangle2 {
 	float J[2][2];
 	/* inv_J[i][j] = dr^i / dx^j */
 	float inv_J[2][2];
-	/* normed J: sum_i dx^i / dr^j dx^i /dr^j = 1: make so that dof in xy frame is normed to 1 as opposed to coordinate basis */
+	/* normed J: sum_i dx^i/dr^j dx^i/dr^j = 1: make so that dof in xy frame is normed to 1 as opposed to coordinate basis */
 	float N[2][2];
+	float inv_N[2][2];
 };
 
 int mesh_init(struct mesh *restrict mesh);
