@@ -38,14 +38,7 @@ int main()
 
 	printf("loading...\n");
 	fflush(stdout);
-	load_obj("../obj/beam.obj", &mesh, 16743);
-	for (int i = 0; i < mesh.nvertices; i++) {
-		float x = mesh.vertices[i].pos.x[0];
-		//float y = mesh.vertices[i].pos.x[1];
-		if (x < 0) {
-			mesh.vertices[i].enabled = false;
-		}
-	}
+	load_obj("../obj/beam.obj", &mesh, 167430);
 
 	struct vis vis;
 	vis_init(&vis, &mesh);

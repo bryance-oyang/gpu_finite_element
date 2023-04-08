@@ -33,9 +33,16 @@ int load_obj(char *filename, struct mesh *mesh, int elasticity)
 		int v0, v1, v2, _v0, _v1, _v2, v0_, v1_, v2_;
 
 		if (sscanf(line, "v %f %f %f", &n0, &n1, &n2) == 3) {
-			mesh_add_vertex(mesh, n0, -n2, true);
+			bool enabled = true;
+			float x = n0;
+			float y = -n2;
+
+			if (x < 0) {
+				enabled = false;
+			}
+			mesh_add_vertex(mesh, x, y, enabled);
 		} else if (sscanf(line, "f %d/%d/%d %d/%d/%d %d/%d/%d", &v0, &_v0, &v0_, &v1, &_v1, &v1_, &v2, &_v2, &v2_) == 9) {
-			mesh_add_triangle2(mesh, v0-1, v1-1, v2-1, 1, elasticity);
+			mesh_add_triangle(mesh, v0-1, v1-1, v2-1, 1, elasticity);
 		}
 	}
 

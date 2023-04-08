@@ -528,10 +528,15 @@ static void triangle2_add_edge_midpoints(struct triangle2 *restrict triangle2, i
 		/* is_boundary true means edge is not shared yet, hence midpoint vertex not created yet */
 		if (element->edges[i]->is_boundary) {
 			/* midpoint of v0, v1, cyclical */
-			vec2_midpoint(&mesh->vertices[vidx[(i+0)%3]].pos, &mesh->vertices[vidx[(i+1)%3]].pos, &midpoint);
-			if ((midv = mesh_add_vertex(mesh, midpoint.x[0], midpoint.x[1], true)) < 0) {
+			struct vertex *v0 = &mesh->vertices[vidx[(i+0)%3]];
+			struct vertex *v1 = &mesh->vertices[vidx[(i+1)%3]];
+			vec2_midpoint(&v0->pos.x, &v1->pos.x, &midpoint);
+
+			bool enabled = v0->enabled || v1->enabled;
+			if ((midv = mesh_add_vertex(mesh, midpoint.x[0], midpoint.x[1], enabled)) < 0) {
 				raise(SIGSEGV);
 			}
+
 			element->edges[i]->vertices[2] = midv;
 			element->vertices[midvidx[i]] = midv;
 		} else {
