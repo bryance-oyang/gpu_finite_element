@@ -210,7 +210,7 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 	for (int i = 0; i < IMAGE_HEIGHT; i++) {
 		for (int j = 0; j < IMAGE_WIDTH; j++) {
 			float stress = vis->stresses[i*IMAGE_WIDTH + j];
-			if (isnanf(stress)) {
+			if (isnan(stress)) {
 				vis->data[i*IMAGE_WIDTH + j] = -1;
 			} else {
 				vis->data[i*IMAGE_WIDTH + j] = lin_scale(stress, min_stress, max_stress, 236, 0);
