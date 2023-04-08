@@ -545,6 +545,7 @@ static void triangle2_add_edge_midpoints(struct triangle2 *restrict triangle2, i
 
 static void triangle2_compute_geometry(struct triangle2 *restrict triangle2)
 {
+	float J[2][2];
 	struct vec2 v01, v02;
 	struct vec2 *v0 = &get_vert(&triangle2->element, 0)->pos;
 	struct vec2 *v1 = &get_vert(&triangle2->element, 1)->pos;
@@ -552,28 +553,16 @@ static void triangle2_compute_geometry(struct triangle2 *restrict triangle2)
 
 	vec2_sub(v1, v0, &v01);
 	vec2_sub(v2, v0, &v02);
-	float v01_len = sqrtf(vec2_dot(&v01, &v01));
-	float v02_len = sqrtf(vec2_dot(&v02, &v02));
-
 	for (int i = 0; i < 2; i++) {
-		triangle2->J[i][0] = v01.x[i];
-		triangle2->J[i][1] = v02.x[i];
-
-		triangle2->N[i][0] = v01.x[i] / v01_len;
-		triangle2->N[i][1] = v02.x[i] / v02_len;
+		J[i][0] = v01.x[i];
+		J[i][1] = v02.x[i];
 	}
 
-	triangle2->jacob = triangle2->J[0][0] * triangle2->J[1][1] - triangle2->J[0][1] * triangle2->J[1][0];
-	triangle2->inv_J[0][0] = triangle2->J[1][1] / triangle2->jacob;
-	triangle2->inv_J[0][1] = -triangle2->J[0][1] / triangle2->jacob;
-	triangle2->inv_J[1][0] = -triangle2->J[1][0] / triangle2->jacob;
-	triangle2->inv_J[1][1] = triangle2->J[0][0] / triangle2->jacob;
-
-	float det_N = triangle2->N[0][0] * triangle2->N[1][1] - triangle2->N[0][1] * triangle2->N[1][0];
-	triangle2->inv_N[0][0] = triangle2->N[1][1] / det_N;
-	triangle2->inv_N[0][1] = -triangle2->N[0][1] / det_N;
-	triangle2->inv_N[1][0] = -triangle2->N[1][0] / det_N;
-	triangle2->inv_N[1][1] = triangle2->N[0][0] / det_N;
+	triangle2->jacob = J[0][0] * J[1][1] - J[0][1] * J[1][0];
+	triangle2->inv_J[0][0] = J[1][1] / triangle2->jacob;
+	triangle2->inv_J[0][1] = -J[0][1] / triangle2->jacob;
+	triangle2->inv_J[1][0] = -J[1][0] / triangle2->jacob;
+	triangle2->inv_J[1][1] = J[0][0] / triangle2->jacob;
 }
 
 struct triangle2 *mesh_add_triangle2(struct mesh *restrict mesh, int v0,
