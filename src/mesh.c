@@ -516,31 +516,26 @@ static void canon_triangle2_compute_all()
 /** midpoints for edges */
 static void triangle2_add_edge_midpoints(struct triangle2 *restrict triangle2, int v0, int v1, int v2)
 {
+	int vidx[3] = {v0, v1, v2};
+	int midvidx[3] = {5, 3, 4}; // indices of midpoint in order of v0v1, v1v2, v2v0
 	struct vec2 midpoint;
 	int midv;
 
 	struct mesh *restrict mesh = triangle2->element.mesh;
 
-	vec2_midpoint(&mesh->vertices[v0].pos, &mesh->vertices[v1].pos, &midpoint);
-	if ((midv = mesh_add_vertex(triangle2->element.mesh, midpoint.x[0], midpoint.x[1], true)) < 0) {
-		raise(SIGSEGV);
+	for (int i = 0; i < 3; i++) {
+		/* is_boundary true means edge is not shared yet, hence midpoint vertex not created yet */
+		if (triangle2->element.edges[i]->is_boundary) {
+			vec2_midpoint(&mesh->vertices[vidx[(i+0)%3]].pos, &mesh->vertices[vidx[(i+1)%3]].pos, &midpoint);
+			if ((midv = mesh_add_vertex(triangle2->element.mesh, midpoint.x[0], midpoint.x[1], true)) < 0) {
+				raise(SIGSEGV);
+			}
+			triangle2->element.edges[i]->vertices[2] = midv;
+			triangle2->element.vertices[midvidx[i]] = midv;
+		} else {
+			triangle2->element.vertices[midvidx[i]] = triangle2->element.edges[i]->vertices[2];
+		}
 	}
-	triangle2->element.edges[0]->vertices[2] = midv;
-	triangle2->element.vertices[5] = midv;
-
-	vec2_midpoint(&mesh->vertices[v1].pos, &mesh->vertices[v2].pos, &midpoint);
-	if ((midv = mesh_add_vertex(triangle2->element.mesh, midpoint.x[0], midpoint.x[1], true)) < 0) {
-		raise(SIGSEGV);
-	}
-	triangle2->element.edges[1]->vertices[2] = midv;
-	triangle2->element.vertices[3] = midv;
-
-	vec2_midpoint(&mesh->vertices[v2].pos, &mesh->vertices[v0].pos, &midpoint);
-	if ((midv = mesh_add_vertex(triangle2->element.mesh, midpoint.x[0], midpoint.x[1], true)) < 0) {
-		raise(SIGSEGV);
-	}
-	triangle2->element.edges[2]->vertices[2] = midv;
-	triangle2->element.vertices[4] = midv;
 }
 
 static void triangle2_compute_geometry(struct triangle2 *restrict triangle2)
