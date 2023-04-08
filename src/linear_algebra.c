@@ -353,13 +353,8 @@ float det(float *restrict matrix, int dim)
 	return result;
 }
 
-float *alloc_inverse(float *restrict matrix, int dim)
+void get_inverse(float *restrict matrix, int dim, float *restrict inverse)
 {
-	float *restrict inverse = malloc(dim * dim * sizeof(*inverse));
-	if (inverse == NULL) {
-		raise(SIGSEGV);
-	}
-
 	float inv_det = 1.0f / det(matrix, dim);
 
 	for (int i = 0; i < dim; i++) {
@@ -367,8 +362,6 @@ float *alloc_inverse(float *restrict matrix, int dim)
 			inverse[i*dim + j] = cofactor(matrix, dim, j, i) * inv_det;
 		}
 	}
-
-	return inverse;
 }
 
 int sparse_conj_grad(struct sparse *restrict A, struct vec *restrict b,

@@ -453,13 +453,13 @@ static void canon_triangle2_acoeff()
 		0.25,	0,	0,	0.5,	0,	1	/* vertex 5 */
 	};
 
-	float *inv_M = alloc_inverse(M, dim);
+	float inv_M[36];
+	get_inverse(M, dim, inv_M);
 	for (int i = 0; i < dim; i++) {
 	for (int j = 0; j < dim; j++) {
 	for (int xy = 0; xy < TRIANGLE2_NXY; xy++) {
 		canon_triangle2.a[j][xy][xy][i] = inv_M[i*dim + j];
 	}}}
-	free(inv_M);
 }
 
 static void canon_triangle2_Dacoeff()

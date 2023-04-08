@@ -65,7 +65,7 @@ void vec2_normalize(struct vec2 *restrict v);
 void vec2_midpoint(struct vec2 *a, struct vec2 *b, struct vec2 *out);
 
 float det(float *restrict matrix, int dim);
-float *alloc_inverse(float *restrict matrix, int dim);
+void get_inverse(float *restrict matrix, int dim, float *restrict inverse);
 
 int sparse_conj_grad(struct sparse *restrict A, struct vec *restrict b,
 	struct vec *restrict c, float tolerance, struct vis *restrict vis,
