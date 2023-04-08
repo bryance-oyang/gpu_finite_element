@@ -11,6 +11,7 @@
  * @brief mesh
  */
 
+#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -40,15 +41,19 @@ static struct element_vtable triangle_vtable = {
 #define TRIANGLE2_NDCOEFF 3
 
 static struct canon_triangle2 {
-	int done;
-	/* dof coeff */
+	int is_computed;
+	/* r^2 + rs + s^2 + r + s + 1 */
 	float a[TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NVECIND][TRIANGLE2_NCOEFF];
 	/* A r + B s + C */
 	float Da[TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NVECIND][TRIANGLE2_NDERIV][TRIANGLE2_NDCOEFF];
+	/* integrals of r^2, rs, s^2, r, s, 1 */
+	float I0[TRIANGLE2_NCOEFF];
 	/* D_i u_{mj} D^i u^j_n: the vector and deriv ind are to be contracted with the metric and inv metric resp */
 	float I1[TRIANGLE2_NVERTEX][TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NXY][TRIANGLE2_NVECIND][TRIANGLE2_NVECIND][TRIANGLE2_NDERIV][TRIANGLE2_NDERIV];
 	/* D_i u^j_m D_j u^i_n */
 	float I2[TRIANGLE2_NVERTEX][TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NXY];
+	/* u^j_m (same for j indices so no TRIANGLE2_NXY) */
+	float I3[TRIANGLE2_NVERTEX];
 } canon_triangle2;
 
 static struct element_vtable triangle2_vtable = {
@@ -192,7 +197,7 @@ static struct edge *find_edge(struct mesh *restrict mesh,
 	return edge;
 }
 
-struct edge *mesh_add_edge(struct mesh *restrict mesh, struct vertex *v0, struct vertex *v1)
+struct edge *mesh_add_get_edge(struct mesh *restrict mesh, struct vertex *v0, struct vertex *v1)
 {
 	struct ht_node *prev;
 	struct edge *edge = find_edge(mesh, &v0, &v1, &prev);
@@ -213,6 +218,19 @@ struct edge *mesh_add_edge(struct mesh *restrict mesh, struct vertex *v0, struct
 	}
 
 	return edge;
+}
+
+static int mesh_add_element(struct mesh *restrict mesh, struct element *restrict element)
+{
+	int nelements = mesh->nelements + 1;
+	void *elements = realloc(mesh->elements, nelements * sizeof(*mesh->elements));
+	if (elements == NULL) {
+		return -1;
+	}
+	mesh->elements = elements;
+	mesh->nelements = nelements;
+	mesh->elements[nelements - 1] = element;
+	return 0;
 }
 
 /* assign matrix indices: only enabled vertices will enter the matrix */
@@ -299,17 +317,10 @@ static float triangle_dof(struct triangle *restrict triangle, int vertex, float 
 struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0,
 	struct vertex *v1, struct vertex *v2, float density, float elasticity)
 {
-	mesh->nelements++;
-	mesh->elements = realloc(mesh->elements, mesh->nelements * sizeof(*mesh->elements));
-	if (mesh->elements == NULL) {
-		return NULL;
-	}
-
 	struct triangle *triangle = malloc(sizeof(*triangle));
-	if (triangle == NULL) {
+	if (triangle == NULL || mesh_add_element(mesh, &triangle->element) != 0) {
 		return NULL;
 	}
-	mesh->elements[mesh->nelements - 1] = &triangle->element;
 
 	triangle->element.vtable = &triangle_vtable;
 	triangle->element.mesh = mesh;
@@ -338,7 +349,7 @@ struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0
 /*
  * integral of (E/2) * (D_i u_j D_i u_j + D_i u_i + D_j u_j)
  */
-void stiffness_add_triangle(struct sparse *restrict A, struct element *restrict element)
+void triangle_stiffness_add(struct sparse *restrict A, struct element *restrict element)
 {
 	struct triangle *triangle = container_of(element, struct triangle, element);
 
@@ -377,7 +388,7 @@ void stiffness_add_triangle(struct sparse *restrict A, struct element *restrict 
 	}
 }
 
-void forces_add_triangle(struct vec *restrict b, struct element *restrict element)
+void triangle_forces_add(struct vec *restrict b, struct element *restrict element)
 {
 	struct triangle *triangle = container_of(element, struct triangle, element);
 
@@ -423,15 +434,15 @@ void triangle_scalar_stress(struct vec *restrict c, struct element *restrict ele
 }
 
 /**
- * integrates (A r + B s + C) * (D r + E s + F)
+ * integrates (A[0] r + A[1] s + A[2]) * (D[0] r + D[1] s + D[2])
  */
-static float canon_triangle2_integral(float *A, float *D)
+static float canon_triangle2_integral_grad(float *A, float *D)
 {
 	return
-	(1.0f/12.0f) * (A[0]*D[0] + A[1]*D[1]) +
-	(1.0f/2.0f) * (A[2]*D[2]) +
-	(1.0f/24.0f) * (A[0]*D[1] + A[1]*D[0]) +
-	(1.0f/6.0f) * ((A[0] + A[1])*D[2] + (D[0] + D[1])*A[2]);
+	canon_triangle2.I0[0] * (A[0]*D[0] + A[1]*D[1]) +
+	canon_triangle2.I0[5] * (A[2]*D[2]) +
+	canon_triangle2.I0[1] * (A[0]*D[1] + A[1]*D[0]) +
+	canon_triangle2.I0[3] * ((A[0] + A[1])*D[2] + (D[0] + D[1])*A[2]);
 }
 
 static void canon_triangle2_acoeff()
@@ -481,7 +492,7 @@ static void canon_triangle2_I1()
 	for (int r1 = 0; r1 < TRIANGLE2_NVECIND; r1++) {
 	for (int dr0 = 0; dr0 < TRIANGLE2_NDERIV; dr0++) {
 	for (int dr1 = 0; dr1 < TRIANGLE2_NDERIV; dr1++) {
-		canon_triangle2.I1[v0][v1][xy0][xy1][r0][r1][dr0][dr1] = canon_triangle2_integral(
+		canon_triangle2.I1[v0][v1][xy0][xy1][r0][r1][dr0][dr1] = canon_triangle2_integral_grad(
 			canon_triangle2.Da[v0][xy0][r0][dr0],
 			canon_triangle2.Da[v1][xy1][r1][dr1]
 		);
@@ -496,19 +507,185 @@ static void canon_triangle2_I2()
 	for (int xy1 = 0; xy1 < TRIANGLE2_NXY; xy1++) {
 	for (int i = 0; i < TRIANGLE2_NVECIND; i++) {
 	for (int j = 0; j < TRIANGLE2_NDERIV; j++) {
-		canon_triangle2.I2[v0][v1][xy0][xy1] += canon_triangle2_integral(
+		canon_triangle2.I2[v0][v1][xy0][xy1] += canon_triangle2_integral_grad(
 			canon_triangle2.Da[v0][xy0][i][j],
 			canon_triangle2.Da[v1][xy1][j][i]
 		);
 	}}}}}}
 }
 
+static void canon_triangle2_I3()
+{
+	for (int v = 0; v < TRIANGLE2_NVERTEX; v++) {
+	for (int c = 0; c < TRIANGLE2_NCOEFF; c++) {
+		canon_triangle2.I3[v] += canon_triangle2.a[v][0][0][c] * canon_triangle2.I0[c];
+	}}
+}
+
 static void canon_triangle2_compute_all()
 {
+	canon_triangle2.I0[0] = 1.0f/12.0f; /* r^2 */
+	canon_triangle2.I0[1] = 1.0f/24.0f; /* rs */
+	canon_triangle2.I0[2] = 1.0f/12.0f; /* s^2 */
+	canon_triangle2.I0[3] = 1.0f/6.0f; /* r */
+	canon_triangle2.I0[4] = 1.0f/6.0f; /* s */
+	canon_triangle2.I0[5] = 0.5f; /* 1 */
+
 	canon_triangle2_acoeff();
 	canon_triangle2_Dacoeff();
 	canon_triangle2_I1();
 	canon_triangle2_I2();
+	canon_triangle2_I3();
 
-	canon_triangle2.done = 1;
+	canon_triangle2.is_computed = 1;
+}
+
+/** midpoints for edges */
+static void triangle2_add_edge_midpoints(struct triangle2 *restrict triangle2, struct vertex *v0, struct vertex *v1, struct vertex *v2)
+{
+	struct vec2 midpoint;
+	struct vertex *midv;
+
+	vec2_midpoint(&v0->pos, &v1->pos, &midpoint);
+	if ((midv = mesh_add_vertex(triangle2->element.mesh, midpoint.x[0], midpoint.x[1], true)) == NULL) {
+		raise(SIGSEGV);
+	}
+	triangle2->element.edges[0]->vertices[2] = midv;
+	triangle2->element.vertices[5] = midv;
+
+	vec2_midpoint(&v1->pos, &v2->pos, &midpoint);
+	if ((midv = mesh_add_vertex(triangle2->element.mesh, midpoint.x[0], midpoint.x[1], true)) == NULL) {
+		raise(SIGSEGV);
+	}
+	triangle2->element.edges[1]->vertices[2] = midv;
+	triangle2->element.vertices[3] = midv;
+
+	vec2_midpoint(&v2->pos, &v0->pos, &midpoint);
+	if ((midv = mesh_add_vertex(triangle2->element.mesh, midpoint.x[0], midpoint.x[1], true)) == NULL) {
+		raise(SIGSEGV);
+	}
+	triangle2->element.edges[2]->vertices[2] = midv;
+	triangle2->element.vertices[4] = midv;
+}
+
+static void triangle2_compute_geometry(struct triangle2 *restrict triangle2)
+{
+	struct vec2 v01, v02;
+	struct vec2 *v0 = &triangle2->element.vertices[0]->pos;
+	struct vec2 *v1 = &triangle2->element.vertices[1]->pos;
+	struct vec2 *v2 = &triangle2->element.vertices[2]->pos;
+
+	vec2_sub(v1, v0, &v01);
+	vec2_sub(v2, v0, &v02);
+
+	for (int i = 0; i < 2; i++) {
+		triangle2->J[i][0] = v01.x[i];
+		triangle2->J[i][1] = v02.x[i];
+	}
+
+	triangle2->jacob = triangle2->J[0][0] * triangle2->J[1][1] - triangle2->J[0][1] * triangle2->J[1][0];
+	triangle2->inv_J[0][0] = triangle2->J[1][1] / triangle2->jacob;
+	triangle2->inv_J[0][1] = -triangle2->J[0][1] / triangle2->jacob;
+	triangle2->inv_J[1][0] = -triangle2->J[1][0] / triangle2->jacob;
+	triangle2->inv_J[1][1] = triangle2->J[0][0] / triangle2->jacob;
+}
+
+struct triangle2 *mesh_add_triangle2(struct mesh *restrict mesh, struct vertex *v0,
+	struct vertex *v1, struct vertex *v2, float density, float elasticity)
+{
+	struct triangle2 *triangle2 = malloc(sizeof(*triangle2));
+	if (triangle2 == NULL || mesh_add_element(mesh, &triangle2->element) != 0) {
+		return NULL;
+	}
+
+	triangle2->element.vtable = &triangle2_vtable;
+	triangle2->element.mesh = mesh;
+
+	triangle2->element.nvertices = 6; /* includes midpoints of edges */
+	triangle2->element.vertices[0] = v0;
+	triangle2->element.vertices[1] = v1;
+	triangle2->element.vertices[2] = v2;
+
+	triangle2->element.density = density;
+	triangle2->element.elasticity = elasticity;
+
+	triangle2->element.nedges = 3;
+	triangle2->element.edges[0] = mesh_add_get_edge(mesh, v0, v1);
+	triangle2->element.edges[1] = mesh_add_get_edge(mesh, v1, v2);
+	triangle2->element.edges[2] = mesh_add_get_edge(mesh, v2, v0);
+
+	triangle2_add_edge_midpoints(triangle2, v0, v1, v2);
+	triangle2_compute_geometry(triangle2);
+
+	return triangle2;
+}
+
+void triangle2_stiffness_add(struct sparse *restrict A, struct element *restrict element)
+{
+	if (!canon_triangle2.is_computed) {
+		canon_triangle2_compute_all();
+	}
+
+	struct triangle2 *triangle2 = container_of(element, struct triangle2, element);
+
+	for (int v0 = 0; v0 < TRIANGLE2_NVERTEX; v0++) {
+
+	struct vertex *vert0 = element->vertices[v0];
+	if (!vert0->enabled) {
+		continue;
+	}
+	int id0 = vert0->id;
+
+	for (int v1 = 0; v1 < TRIANGLE2_NVERTEX; v1++) {
+
+	struct vertex *vert1 = element->vertices[v1];
+	if (!vert1->enabled) {
+		continue;
+	}
+	int id1 = vert1->id;
+
+	for (int xy0 = 0; xy0 < TRIANGLE2_NXY; xy0++) {
+	for (int xy1 = 0; xy1 < TRIANGLE2_NXY; xy1++) {
+
+	float entry = 0;
+
+	for (int r0 = 0; r0 < TRIANGLE2_NVECIND; r0++) {
+	for (int r1 = 0; r1 < TRIANGLE2_NVECIND; r1++) {
+	for (int dr0 = 0; dr0 < TRIANGLE2_NDERIV; dr0++) {
+	for (int dr1 = 0; dr1 < TRIANGLE2_NDERIV; dr1++) {
+	for (int i = 0; i < 2; i++) {
+	for (int j = 0; j < 2; j++) {
+
+	entry += canon_triangle2.I1[v0][v1][xy0][xy1][r0][r1][dr0][dr1]
+		* triangle2->J[i][r0] * triangle2->J[i][r1]
+		* triangle2->inv_J[dr0][j] * triangle2->inv_J[dr1][j];
+
+	}}}}}}
+
+	entry += canon_triangle2.I2[v0][v1][xy0][xy1];
+
+	entry *= triangle2->jacob * element->elasticity / 2;
+	sparse_add(A, 2*id0 + xy0, 2*id1 + xy1, entry);
+
+	}}}}
+}
+
+void triangle2_forces_add(struct vec *restrict b, struct element *restrict element)
+{
+	struct triangle2 *triangle2 = container_of(element, struct triangle2, element);
+
+	float factor = triangle2->jacob * element->density;
+	for (int v = 0; v < TRIANGLE2_NVERTEX; v++) {
+		struct vertex *vert = element->vertices[v];
+		if (!vert->enabled) {
+			continue;
+		}
+		int id = vert->id;
+		b->x[2*id + 1] -= factor * canon_triangle2.I3[v];
+	}
+}
+
+void triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element)
+{
+
 }

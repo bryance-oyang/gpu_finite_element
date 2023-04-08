@@ -306,6 +306,12 @@ void vec2_normalize(struct vec2 *restrict v)
 	vec2_scale(1.0f/norm, v);
 }
 
+void vec2_midpoint(struct vec2 *a, struct vec2 *b, struct vec2 *out)
+{
+	vec2_add(a, b, out);
+	vec2_scale(0.5, out);
+}
+
 static float cofactor(float *restrict matrix, int dim, int i, int j)
 {
 	float *restrict sub = malloc((dim - 1) * (dim - 1) * sizeof(*sub));

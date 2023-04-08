@@ -62,6 +62,7 @@ void vec2_sub(struct vec2 *a, struct vec2 *b, struct vec2 *out);
 void vec2_scale(float scalar, struct vec2 *restrict v);
 float vec2_dot(struct vec2 *a, struct vec2 *b);
 void vec2_normalize(struct vec2 *restrict v);
+void vec2_midpoint(struct vec2 *a, struct vec2 *b, struct vec2 *out);
 
 float det(float *restrict matrix, int dim);
 float *alloc_inverse(float *restrict matrix, int dim);

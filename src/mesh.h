@@ -31,7 +31,8 @@ struct edge {
 	struct ht_node node;
 
 	bool is_boundary;
-	struct vertex *vertices[2];
+	/* 0,1 are defining vertices, but also can contain midpoint */
+	struct vertex *vertices[3];
 };
 
 struct face {
@@ -84,11 +85,20 @@ struct triangle {
 	struct vec2 dof_grad[3];
 };
 
+/**
+ *    2
+ *    |.
+ *    | .
+ *   4|  .3
+ *    |   .
+ *    |    .
+ *   0|-----1
+ *       5
+ */
 struct triangle2 {
 	struct element element;
 
-	/* area = 1/2 |J| */
-	float area;
+	float jacob;
 	/* J[i][j] = dx^i / dr^j */
 	float J[2][2];
 	/* inv_J[i][j] = dr^i / dx^j */
@@ -109,7 +119,7 @@ void triangle_stiffness_add(struct sparse *restrict A, struct element *restrict 
 void triangle_forces_add(struct vec *restrict b, struct element *restrict element);
 void triangle_scalar_stress(struct vec *restrict c, struct element *restrict element);
 
-struct triangle *mesh_add_triangle2(struct mesh *restrict mesh, struct vertex *v0,
+struct triangle2 *mesh_add_triangle2(struct mesh *restrict mesh, struct vertex *v0,
 	struct vertex *v1, struct vertex *v2, float density, float elasticity);
 void triangle2_stiffness_add(struct sparse *restrict A, struct element *restrict element);
 void triangle2_forces_add(struct vec *restrict b, struct element *restrict element);
