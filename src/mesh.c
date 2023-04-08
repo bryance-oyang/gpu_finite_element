@@ -160,17 +160,17 @@ static struct edge *alloc_new_edge()
  * node so that (*pprev)->next is the position to insert edge if not found
  */
 static struct edge *find_edge(struct mesh *restrict mesh,
-	int v0_idx, int v1_idx, struct ht_node **pprev)
+	int *v0, int *v1, struct ht_node **pprev)
 {
 	/* order v0, v1 by index */
-	if (v0_idx > v1_idx) {
-		int tmp = v0_idx;
-		v0_idx = v1_idx;
-		v1_idx = tmp;
+	if (v0 > v1) {
+		int tmp = *v0;
+		*v0 = *v1;
+		*v1 = tmp;
 	}
 
 	/* key for hash table */
-	if (snprintf(hash_buf, HBUF_LEN, "%d_%d", v0_idx, v1_idx) >= HBUF_LEN) {
+	if (snprintf(hash_buf, HBUF_LEN, "%d_%d", *v0, *v1) >= HBUF_LEN) {
 		return NULL;
 	}
 	unsigned int key = knuth_hash(hash_buf);
@@ -180,7 +180,7 @@ static struct edge *find_edge(struct mesh *restrict mesh,
 	struct edge *edge = NULL;
 	ht_for_each(&mesh->edges_table, cur, prev, key) {
 		struct edge *tmp = container_of(cur, struct edge, node);
-		if (tmp->vertices[0] == v0_idx && tmp->vertices[1] == v1_idx) {
+		if (tmp->vertices[0] == *v0 && tmp->vertices[1] == *v1) {
 			edge = tmp;
 			break;
 		}
@@ -195,7 +195,7 @@ static struct edge *find_edge(struct mesh *restrict mesh,
 struct edge *mesh_add_get_edge(struct mesh *restrict mesh, int v0, int v1)
 {
 	struct ht_node *prev;
-	struct edge *edge = find_edge(mesh, v0, v1, &prev);
+	struct edge *edge = find_edge(mesh, &v0, &v1, &prev);
 
 	if (edge == NULL) {
 		/* not found in ht */
