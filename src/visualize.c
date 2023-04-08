@@ -72,6 +72,12 @@ static void get_xy(struct vis *restrict vis, int i, int j, float *x, float *y)
 	*y = -vis->slope * (i - IMAGE_HEIGHT / 2) + vis->mid_y;
 }
 
+static void get_ij(struct vis *restrict vis, float x, float y, int *i, int *j)
+{
+	*i = -(y - vis->mid_y) / vis->slope + IMAGE_HEIGHT / 2;
+	*j = (x - vis->mid_x) / vis->slope + IMAGE_WIDTH / 2;
+}
+
 static bool xy_in_triangle(struct element *restrict element, struct vec *restrict c, float x, float y)
 {
 	struct vec2 v[3];
@@ -120,7 +126,7 @@ static struct element *xy_to_element(struct vis *restrict vis, struct mesh *rest
 
 int vis_init(struct vis *restrict vis, struct mesh *restrict mesh)
 {
-	vis->data_bytes = IMAGE_HEIGHT * IMAGE_WIDTH * sizeof(*vis->data);
+	vis->data_bytes = (IMAGE_HEIGHT*IMAGE_WIDTH + 6*mesh->nelements) * sizeof(*vis->data);
 	vis->data = malloc(vis->data_bytes);
 	if (vis->data == NULL) {
 		goto err_nodata;
@@ -209,6 +215,27 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 			} else {
 				vis->data[i*IMAGE_WIDTH + j] = lin_scale(stress, min_stress, max_stress, 236, 0);
 			}
+		}
+	}
+
+	/* triangles x0, y0, x1, y1, x2, y2 */
+	for (int e = 0; e < mesh->nelements; e++) {
+		for (int v = 0; v < 3; v++) {
+			struct vertex *restrict vert = get_vert(mesh->elements[e], v);
+			float x, y;
+			int i, j;
+
+			if (vert->enabled) {
+				int id = vert->id;
+				x = vert->pos.x[0] + c->x[DIM*id + 0];
+				y = vert->pos.x[1] + c->x[DIM*id + 1];
+			} else {
+				x = vert->pos.x[0];
+				y = vert->pos.x[1];
+			}
+			get_ij(vis, x, y, &i, &j);
+			vis->data[IMAGE_HEIGHT*IMAGE_WIDTH + (e*3 + v)*DIM + 0] = j;
+			vis->data[IMAGE_HEIGHT*IMAGE_WIDTH + (e*3 + v)*DIM + 1] = i;
 		}
 	}
 }
