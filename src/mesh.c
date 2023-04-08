@@ -192,7 +192,7 @@ static struct edge *find_edge(struct mesh *restrict mesh,
 	return edge;
 }
 
-struct edge *mesh_add_get_edge(struct mesh *restrict mesh, int v0, int v1)
+static struct edge *add_get_edge(struct mesh *restrict mesh, int v0, int v1)
 {
 	struct ht_node *prev;
 	struct edge *edge = find_edge(mesh, &v0, &v1, &prev);
@@ -521,19 +521,21 @@ static void triangle2_add_edge_midpoints(struct triangle2 *restrict triangle2, i
 	struct vec2 midpoint;
 	int midv;
 
-	struct mesh *restrict mesh = triangle2->element.mesh;
+	struct element *restrict element = &triangle2->element;
+	struct mesh *restrict mesh = element->mesh;
 
 	for (int i = 0; i < 3; i++) {
 		/* is_boundary true means edge is not shared yet, hence midpoint vertex not created yet */
-		if (triangle2->element.edges[i]->is_boundary) {
+		if (element->edges[i]->is_boundary) {
+			/* midpoint of v0, v1, cyclical */
 			vec2_midpoint(&mesh->vertices[vidx[(i+0)%3]].pos, &mesh->vertices[vidx[(i+1)%3]].pos, &midpoint);
-			if ((midv = mesh_add_vertex(triangle2->element.mesh, midpoint.x[0], midpoint.x[1], true)) < 0) {
+			if ((midv = mesh_add_vertex(mesh, midpoint.x[0], midpoint.x[1], true)) < 0) {
 				raise(SIGSEGV);
 			}
-			triangle2->element.edges[i]->vertices[2] = midv;
-			triangle2->element.vertices[midvidx[i]] = midv;
+			element->edges[i]->vertices[2] = midv;
+			element->vertices[midvidx[i]] = midv;
 		} else {
-			triangle2->element.vertices[midvidx[i]] = triangle2->element.edges[i]->vertices[2];
+			element->vertices[midvidx[i]] = element->edges[i]->vertices[2];
 		}
 	}
 }
@@ -568,22 +570,23 @@ struct triangle2 *mesh_add_triangle2(struct mesh *restrict mesh, int v0,
 	if (triangle2 == NULL || mesh_add_element(mesh, &triangle2->element) != 0) {
 		return NULL;
 	}
+	struct element *element = &triangle2->element;
 
-	triangle2->element.vtable = &triangle2_vtable;
-	triangle2->element.mesh = mesh;
+	element->vtable = &triangle2_vtable;
+	element->mesh = mesh;
 
-	triangle2->element.nvertices = 6; /* includes midpoints of edges */
-	triangle2->element.vertices[0] = v0;
-	triangle2->element.vertices[1] = v1;
-	triangle2->element.vertices[2] = v2;
+	element->nvertices = 6; /* includes midpoints of edges */
+	element->vertices[0] = v0;
+	element->vertices[1] = v1;
+	element->vertices[2] = v2;
 
-	triangle2->element.density = density;
-	triangle2->element.elasticity = elasticity;
+	element->density = density;
+	element->elasticity = elasticity;
 
-	triangle2->element.nedges = 3;
-	triangle2->element.edges[0] = mesh_add_get_edge(mesh, v0, v1);
-	triangle2->element.edges[1] = mesh_add_get_edge(mesh, v1, v2);
-	triangle2->element.edges[2] = mesh_add_get_edge(mesh, v2, v0);
+	element->nedges = 3;
+	element->edges[0] = add_get_edge(mesh, v0, v1);
+	element->edges[1] = add_get_edge(mesh, v1, v2);
+	element->edges[2] = add_get_edge(mesh, v2, v0);
 
 	triangle2_add_edge_midpoints(triangle2, v0, v1, v2);
 	triangle2_compute_geometry(triangle2);
