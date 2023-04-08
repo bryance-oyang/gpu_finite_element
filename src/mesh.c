@@ -558,11 +558,12 @@ static void triangle2_compute_geometry(struct triangle2 *restrict triangle2)
 		J[i][1] = v02.x[i];
 	}
 
-	triangle2->jacob = J[0][0] * J[1][1] - J[0][1] * J[1][0];
-	triangle2->inv_J[0][0] = J[1][1] / triangle2->jacob;
-	triangle2->inv_J[0][1] = -J[0][1] / triangle2->jacob;
-	triangle2->inv_J[1][0] = -J[1][0] / triangle2->jacob;
-	triangle2->inv_J[1][1] = J[0][0] / triangle2->jacob;
+	float det_J = J[0][0] * J[1][1] - J[0][1] * J[1][0];
+	triangle2->inv_J[0][0] = J[1][1] / det_J;
+	triangle2->inv_J[0][1] = -J[0][1] / det_J;
+	triangle2->inv_J[1][0] = -J[1][0] / det_J;
+	triangle2->inv_J[1][1] = J[0][0] / det_J;
+	triangle2->jacob = fabsf(det_J);
 }
 
 struct triangle2 *mesh_add_triangle2(struct mesh *restrict mesh, int v0,
