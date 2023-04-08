@@ -66,7 +66,6 @@ int main()
 	vis_fill(&vis, &mesh, &problem.c);
 	for (;;) {
 		vis_send(&vis);
-		printf("sent_data\n");
 		sleep(1);
 	}
 	vis_destroy(&vis);
