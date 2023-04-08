@@ -38,7 +38,7 @@ int main()
 
 	printf("loading...\n");
 	fflush(stdout);
-	load_obj("../obj/beam.obj", &mesh, 167430);
+	load_obj("../obj/beam.obj", &mesh, 16743);
 
 	struct vis vis;
 	vis_init(&vis, &mesh);

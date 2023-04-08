@@ -81,9 +81,11 @@ static bool xy_in_triangle(struct element *restrict element, struct vec *restric
 		int id = vert->id;
 		v[i] = vert->pos;
 
-		/* position after being strained */
-		v[i].x[0] += c->x[2*id + 0];
-		v[i].x[1] += c->x[2*id + 1];
+		if (vert->enabled) {
+			/* position after being strained */
+			v[i].x[0] += c->x[2*id + 0];
+			v[i].x[1] += c->x[2*id + 1];
+		}
 	}
 
 	struct vec2 w = {.x = {x, y}};
@@ -155,6 +157,8 @@ err_nodata:
 
 void vis_destroy(struct vis *restrict vis)
 {
+	free(vis->sorted_stresses);
+	free(vis->stresses);
 	free(vis->data);
 	ws_ctube_close(vis->ctube);
 }

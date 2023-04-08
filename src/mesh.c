@@ -40,6 +40,15 @@ static struct element_vtable triangle_vtable = {
 #define TRIANGLE2_NDCOEFF 3
 
 /**
+ *    2
+ *    |.
+ *    | .
+ *   4|  .3
+ *    |   .
+ *    |    .
+ *   0|-----1
+ *       5
+ *
  * f_v = function 1 on vertex v and 0 on others
  * f_v = a_0 r^2 + a_1 rs + a_2 s^2 + a_3 r + a_4 s + a_5
  */
@@ -53,8 +62,8 @@ static struct canon_triangle2 {
 	float I0[TRIANGLE2_NCOEFF];
 	/* integral of D_dr0 f_v0 D_dr1 f_v1 */
 	float I1[TRIANGLE2_NVERTEX][TRIANGLE2_NVERTEX][TRIANGLE2_NDERIV][TRIANGLE2_NDERIV];
-	/* u^j_m  */
-	float I3[TRIANGLE2_NVERTEX];
+	/* integral of f_v  */
+	float I2[TRIANGLE2_NVERTEX];
 } canon_triangle2;
 
 static struct element_vtable triangle2_vtable = {
@@ -485,7 +494,7 @@ static void canon_triangle2_I3()
 {
 	for (int v = 0; v < TRIANGLE2_NVERTEX; v++) {
 	for (int c = 0; c < TRIANGLE2_NCOEFF; c++) {
-		canon_triangle2.I3[v] += canon_triangle2.a[v][c] * canon_triangle2.I0[c];
+		canon_triangle2.I2[v] += canon_triangle2.a[v][c] * canon_triangle2.I0[c];
 	}}
 }
 
@@ -652,7 +661,7 @@ void triangle2_forces_add(struct vec *restrict b, struct element *restrict eleme
 		}
 		int id = vert->id;
 
-		b->x[2*id + 1] -= factor * canon_triangle2.I3[v];
+		b->x[2*id + 1] -= factor * canon_triangle2.I2[v];
 	}
 }
 
