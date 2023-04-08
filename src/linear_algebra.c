@@ -312,7 +312,7 @@ void vec2_midpoint(struct vec2 *a, struct vec2 *b, struct vec2 *out)
 	vec2_scale(0.5, out);
 }
 
-static float cofactor(float *restrict matrix, int dim, int i, int j)
+static float minor(float *restrict matrix, int dim, int i, int j)
 {
 	float *restrict sub = malloc((dim - 1) * (dim - 1) * sizeof(*sub));
 	if (sub == NULL) {
@@ -347,7 +347,7 @@ float det(float *restrict matrix, int dim)
 	int sgn = 1;
 	float result = 0;
 	for (int j = 0; j < dim; j++) {
-		result += sgn * matrix[j] * cofactor(matrix, dim, 0, j);
+		result += sgn * matrix[j] * minor(matrix, dim, 0, j);
 		sgn *= -1;
 	}
 	return result;
@@ -359,7 +359,11 @@ void get_inverse(float *restrict matrix, int dim, float *restrict inverse)
 
 	for (int i = 0; i < dim; i++) {
 		for (int j = 0; j < dim; j++) {
-			inverse[i*dim + j] = cofactor(matrix, dim, j, i) * inv_det;
+			int sgn = 1;
+			if ((i + j) % 2 != 0) {
+				sgn = -1;
+			}
+			inverse[i*dim + j] = sgn * minor(matrix, dim, j, i) * inv_det;
 		}
 	}
 }
