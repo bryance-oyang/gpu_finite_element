@@ -35,7 +35,6 @@ static struct element_vtable triangle_vtable = {
 
 #define TRIANGLE2_NVERTEX 6
 #define TRIANGLE2_NXY 2
-#define TRIANGLE2_NVECIND 2
 #define TRIANGLE2_NDERIV 2
 #define TRIANGLE2_NCOEFF 6
 #define TRIANGLE2_NDCOEFF 3
@@ -616,44 +615,42 @@ void triangle2_stiffness_add(struct sparse *restrict A, struct element *restrict
 	struct triangle2 *triangle2 = container_of(element, struct triangle2, element);
 
 	for (int v0 = 0; v0 < TRIANGLE2_NVERTEX; v0++) {
-
-	struct vertex *vert0 = get_vert(element, v0);
-	if (!vert0->enabled) {
-		continue;
-	}
-	int id0 = vert0->id;
-
 	for (int v1 = 0; v1 < TRIANGLE2_NVERTEX; v1++) {
-
-	struct vertex *vert1 = get_vert(element, v1);
-	if (!vert1->enabled) {
-		continue;
-	}
-	int id1 = vert1->id;
-
-	for (int xy0 = 0; xy0 < TRIANGLE2_NXY; xy0++) {
-	for (int xy1 = 0; xy1 < TRIANGLE2_NXY; xy1++) {
-
-	float entry = 0;
-
-	for (int dr0 = 0; dr0 < TRIANGLE2_NDERIV; dr0++) {
-	for (int dr1 = 0; dr1 < TRIANGLE2_NDERIV; dr1++) {
-	/* D_i u_j D^i u^j */
-	if (xy0 == xy1) {
-		for (int i = 0; i < 2; i++) {
-			entry += canon_triangle2.I1[v0][v1][dr0][dr1]
-				* triangle2->inv_J[dr0][i] * triangle2->inv_J[dr1][i];
+		struct vertex *vert0 = get_vert(element, v0);
+		if (!vert0->enabled) {
+			continue;
 		}
-	}
+		int id0 = vert0->id;
 
-	entry += canon_triangle2.I1[v0][v1][dr0][dr1]
-		* triangle2->inv_J[dr0][xy1] * triangle2->inv_J[dr1][xy0];
+		struct vertex *vert1 = get_vert(element, v1);
+		if (!vert1->enabled) {
+			continue;
+		}
+		int id1 = vert1->id;
+
+		for (int xy0 = 0; xy0 < TRIANGLE2_NXY; xy0++) {
+		for (int xy1 = 0; xy1 < TRIANGLE2_NXY; xy1++) {
+			float entry = 0;
+
+			for (int dr0 = 0; dr0 < TRIANGLE2_NDERIV; dr0++) {
+			for (int dr1 = 0; dr1 < TRIANGLE2_NDERIV; dr1++) {
+				/* D_i u_j D^i u^j */
+				if (xy0 == xy1) {
+					for (int i = 0; i < 2; i++) {
+						entry += canon_triangle2.I1[v0][v1][dr0][dr1]
+							* triangle2->inv_J[dr0][i] * triangle2->inv_J[dr1][i];
+					}
+				}
+
+				/* D_i u^j D_j u^i */
+				entry += canon_triangle2.I1[v0][v1][dr0][dr1]
+					* triangle2->inv_J[dr0][xy1] * triangle2->inv_J[dr1][xy0];
+			}}
+
+			entry *= triangle2->jacob * element->elasticity / 2;
+			sparse_add(A, 2*id0 + xy0, 2*id1 + xy1, entry);
+		}}
 	}}
-
-	entry *= triangle2->jacob * element->elasticity / 2;
-	sparse_add(A, 2*id0 + xy0, 2*id1 + xy1, entry);
-
-	}}}}
 }
 
 void triangle2_forces_add(struct vec *restrict b, struct element *restrict element)
