@@ -13,7 +13,7 @@
 
 #define SQR(x) ((x)*(x))
 
-#define IMAGE_WIDTH 400
-#define IMAGE_HEIGHT 400
+#define IMAGE_WIDTH 512
+#define IMAGE_HEIGHT 512
 
 #endif /* MACRO_DEF_H */
