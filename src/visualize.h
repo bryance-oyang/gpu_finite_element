@@ -17,11 +17,28 @@
 
 struct mesh;
 struct vec;
+struct element;
 
 struct vis {
 	struct ws_ctube *ctube;
 	size_t data_bytes;
 	int32_t *data;
+
+	float *stresses;
+
+	int nsorted_stresses;
+	float *sorted_stresses;
+	struct element *cached_element;
+
+	float min_x;
+	float max_x;
+	float mid_x;
+
+	float min_y;
+	float max_y;
+	float mid_y;
+
+	float slope;
 };
 
 int vis_init(struct vis *restrict vis, struct mesh *restrict mesh);

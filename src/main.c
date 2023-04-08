@@ -58,11 +58,6 @@ int main()
 		return -1;
 	}
 
-	printf("calculating stresses...\n");
-	fflush(stdout);
-	mesh_scalar_stress(&mesh, &problem.c);
-	printf("done\n");
-
 #ifndef GPU_COMPUTE
 	printf("=== Running cpu only version (for gpu acceleration, compile with `make gpu`) ===\n");
 #endif /* GPU_COMPUTE */
@@ -71,6 +66,7 @@ int main()
 	vis_fill(&vis, &mesh, &problem.c);
 	for (;;) {
 		vis_send(&vis);
+		printf("sent_data\n");
 		sleep(1);
 	}
 	vis_destroy(&vis);

@@ -251,16 +251,6 @@ void mesh_construct_problem(struct mesh *restrict mesh, struct sparse *restrict 
 	}
 }
 
-void mesh_scalar_stress(struct mesh *restrict mesh, struct vec *restrict c)
-{
-#ifdef _OPENMP
-#pragma omp parallel for num_threads(OMP_NTHREAD)
-#endif
-	for (int i = 0; i < mesh->nelements; i++) {
-		mesh->elements[i]->vtable->scalar_stress(c, mesh->elements[i]);
-	}
-}
-
 static void triangle_compute_area(struct triangle *restrict triangle)
 {
 	struct vec2 v10, v20;
@@ -300,15 +290,6 @@ static void triangle_compute_dof(struct triangle *restrict triangle)
 	}
 }
 
-/* function that is 1 at one vertex and 0 at other 2 */
-static float triangle_dof(struct triangle *restrict triangle, int vertex, float x, float y)
-{
-	struct vec2 vxy;
-	vxy.x[0] = x;
-	vxy.x[1] = y;
-	return 1 + vec2_dot(&triangle->dof_grad[vertex], &vxy) - vec2_dot(&triangle->dof_grad[vertex], &get_vert(&triangle->element, vertex)->pos);
-}
-
 struct triangle *mesh_add_triangle(struct mesh *restrict mesh, int v0,
 	int v1, int v2, float density, float elasticity)
 {
@@ -327,6 +308,8 @@ struct triangle *mesh_add_triangle(struct mesh *restrict mesh, int v0,
 
 	triangle->element.density = density;
 	triangle->element.elasticity = elasticity;
+
+	triangle->stress_computed = false;
 
 	/*
 	triangle->element.nedges = 3;
@@ -398,9 +381,16 @@ void triangle_forces_add(struct vec *restrict b, struct element *restrict elemen
 	}
 }
 
-void triangle_scalar_stress(struct vec *restrict c, struct element *restrict element)
+float triangle_scalar_stress(struct vec *restrict c, struct element *restrict element, float x, float y)
 {
+	(void)x;
+	(void)y;
+
 	struct triangle *triangle = container_of(element, struct triangle, element);
+	if (triangle->stress_computed) {
+		return triangle->scalar_stress;
+	}
+
 	float sxx = 0;
 	float sxy = 0;
 	float syy = 0;
@@ -426,7 +416,10 @@ void triangle_scalar_stress(struct vec *restrict c, struct element *restrict ele
 	sxx += pressure;
 	syy += pressure;
 
-	element->scalar_stress = sqrtf(1.5 * (SQR(sxx) + 2*SQR(sxy) + SQR(syy)));
+	triangle->scalar_stress = sqrtf(1.5 * (SQR(sxx) + 2*SQR(sxy) + SQR(syy)));
+	triangle->stress_computed = true;
+
+	return triangle->scalar_stress;
 }
 
 /**
@@ -530,7 +523,7 @@ static void triangle2_add_edge_midpoints(struct triangle2 *restrict triangle2, i
 			/* midpoint of v0, v1, cyclical */
 			struct vertex *v0 = &mesh->vertices[vidx[(i+0)%3]];
 			struct vertex *v1 = &mesh->vertices[vidx[(i+1)%3]];
-			vec2_midpoint(&v0->pos.x, &v1->pos.x, &midpoint);
+			vec2_midpoint(&v0->pos, &v1->pos, &midpoint);
 
 			bool enabled = v0->enabled || v1->enabled;
 			if ((midv = mesh_add_vertex(mesh, midpoint.x[0], midpoint.x[1], enabled)) < 0) {
@@ -663,7 +656,7 @@ void triangle2_forces_add(struct vec *restrict b, struct element *restrict eleme
 	}
 }
 
-void triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element)
+float triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element, float x, float y)
 {
-
+	return 0;
 }

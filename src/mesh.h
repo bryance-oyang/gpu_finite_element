@@ -56,13 +56,12 @@ struct element {
 
 	float density;
 	float elasticity;
-	float scalar_stress;
 };
 
 struct element_vtable {
 	void (*stiffness_add)(struct sparse *restrict A, struct element *restrict element);
 	void (*forces_add)(struct vec *restrict b, struct element *restrict element);
-	void (*scalar_stress)(struct vec *restrict c, struct element *restrict element);
+	float (*scalar_stress)(struct vec *restrict c, struct element *restrict element, float x, float y);
 };
 
 struct mesh {
@@ -84,6 +83,9 @@ struct triangle {
 
 	float area;
 	struct vec2 dof_grad[3];
+
+	bool stress_computed;
+	float scalar_stress;
 };
 
 /**
@@ -116,18 +118,17 @@ struct vertex *get_vert(struct element *restrict element, int vidx);
 struct edge *mesh_add_edge(struct mesh *restrict mesh, struct vertex *v0, struct vertex *v1);
 void mesh_assign_vertex_ids(struct mesh *restrict mesh);
 void mesh_construct_problem(struct mesh *restrict mesh, struct sparse *restrict A, struct vec *b);
-void mesh_scalar_stress(struct mesh *restrict mesh, struct vec *restrict c);
 
 struct triangle *mesh_add_triangle(struct mesh *restrict mesh, int v0,
 	int v1, int v2, float density, float elasticity);
 void triangle_stiffness_add(struct sparse *restrict A, struct element *restrict element);
 void triangle_forces_add(struct vec *restrict b, struct element *restrict element);
-void triangle_scalar_stress(struct vec *restrict c, struct element *restrict element);
+float triangle_scalar_stress(struct vec *restrict c, struct element *restrict element, float x, float y);
 
 struct triangle2 *mesh_add_triangle2(struct mesh *restrict mesh, int v0,
 	int v1, int v2, float density, float elasticity);
 void triangle2_stiffness_add(struct sparse *restrict A, struct element *restrict element);
 void triangle2_forces_add(struct vec *restrict b, struct element *restrict element);
-void triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element);
+float triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element, float x, float y);
 
 #endif /* MESH_H */
