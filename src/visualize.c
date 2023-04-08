@@ -77,8 +77,9 @@ static bool xy_in_triangle(struct element *restrict element, struct vec *restric
 	struct vec2 v[3];
 
 	for (int i = 0; i < 3; i++) {
-		int id = element->vertices[i];
-		v[i] = get_vert(element, i)->pos;
+		struct vertex *vert = get_vert(element, i);
+		int id = vert->id;
+		v[i] = vert->pos;
 
 		/* position after being strained */
 		v[i].x[0] += c->x[2*id + 0];
@@ -117,7 +118,7 @@ static struct element *xy_to_element(struct vis *restrict vis, struct mesh *rest
 
 int vis_init(struct vis *restrict vis, struct mesh *restrict mesh)
 {
-	vis->data_bytes = (3*DIM + 1) * mesh->nelements * sizeof(*vis->data);
+	vis->data_bytes = IMAGE_HEIGHT * IMAGE_WIDTH * sizeof(*vis->data);
 	vis->data = malloc(vis->data_bytes);
 	if (vis->data == NULL) {
 		goto err_nodata;
