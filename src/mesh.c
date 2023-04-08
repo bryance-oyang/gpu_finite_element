@@ -659,7 +659,85 @@ void triangle2_forces_add(struct vec *restrict b, struct element *restrict eleme
 	}
 }
 
+/* take xy in deformed config to rs in canonical */
+static void triangle2_map_xy(struct vec *restrict c, struct element *restrict element, float x, float y, float *r, float *s)
+{
+	float J[2][2];
+	float inv_J[2][2];
+
+	struct vec2 v[3];
+	struct vec2 v01, v02, xy, xy0;
+	for (int i = 0; i < 3; i++) {
+		struct vertex *vert = get_vert(element, i);
+		int id = vert->id;
+		v[i] = vert->pos;
+
+		if (vert->enabled) {
+			/* position after being strained */
+			v[i].x[0] += c->x[2*id + 0];
+			v[i].x[1] += c->x[2*id + 1];
+		}
+	}
+
+	xy.x[0] = x;
+	xy.x[1] = y;
+	vec2_sub(&v[1], &v[0], &v01);
+	vec2_sub(&v[2], &v[0], &v02);
+	vec2_sub(&xy, &v[0], &xy0);
+
+	for (int i = 0; i < 2; i++) {
+		J[i][0] = v01.x[i];
+		J[i][1] = v02.x[i];
+	}
+
+	float det_J = J[0][0] * J[1][1] - J[0][1] * J[1][0];
+	inv_J[0][0] = J[1][1] / det_J;
+	inv_J[0][1] = -J[0][1] / det_J;
+	inv_J[1][0] = -J[1][0] / det_J;
+	inv_J[1][1] = J[0][0] / det_J;
+
+	*r = 0;
+	*s = 0;
+
+	for (int j = 0; j < 2; j++) {
+		*r += inv_J[0][j] * xy0.x[j];
+		*s += inv_J[1][j] * xy0.x[j];
+	}
+}
+
 float triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element, float x, float y)
 {
-	return 0;
+	float r[3] = {0, 0, 1};
+	triangle2_map_xy(c, element, x, y, &r[0], &r[1]);
+
+	struct triangle2 *restrict triangle2 = container_of(element, struct triangle2, element);
+
+	float s[2][2] = {{0, 0}, {0, 0}};
+	for (int v = 0; v < TRIANGLE2_NVERTEX; v++) {
+	struct vertex *vert = get_vert(element, v);
+	if (!vert->enabled) {
+		continue;
+	}
+	int id = vert->id;
+
+	for (int i = 0; i < 2; i++) {
+	for (int j = 0; j < 2; j++) {
+	for (int dr = 0; dr < TRIANGLE2_NDERIV; dr++) {
+	for (int d = 0; d < TRIANGLE2_NDCOEFF; d++) {
+		s[i][j] += triangle2->inv_J[dr][i]
+			* canon_triangle2.Da[v][dr][d]
+			* r[d]
+			* c->x[2*id + j];
+
+		s[i][j] += triangle2->inv_J[dr][j]
+			* canon_triangle2.Da[v][dr][d]
+			* r[d]
+			* c->x[2*id + i];
+	}}}}}
+
+	float pressure = -0.5 * (s[0][0] + s[1][1]);
+	s[0][0] += pressure;
+	s[1][1] += pressure;
+
+	return sqrtf(1.5 * (SQR(s[0][0]) + 2*SQR(s[0][1]) + SQR(s[1][1])));
 }
