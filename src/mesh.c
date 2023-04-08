@@ -112,18 +112,13 @@ void mesh_destroy(struct mesh *restrict mesh)
 	ht_destroy(&mesh->faces_table);
 }
 
-static inline int get_vertex_idx(struct mesh *mesh, struct vertex *v)
-{
-	return v - mesh->vertices;
-}
-
-struct vertex *mesh_add_vertex(struct mesh *restrict mesh, float x, float y, bool enabled)
+int mesh_add_vertex(struct mesh *restrict mesh, float x, float y, bool enabled)
 {
 	if (mesh->nvertices == mesh->vertices_size) {
 		int size = mesh->vertices_size * 2;
 		void *tmp = realloc(mesh->vertices, size * sizeof(*mesh->vertices));
 		if (tmp == NULL) {
-			return NULL;
+			return -1;
 		}
 
 		mesh->vertices = tmp;
@@ -140,7 +135,12 @@ struct vertex *mesh_add_vertex(struct mesh *restrict mesh, float x, float y, boo
 		mesh->nenabled++;
 	}
 
-	return &mesh->vertices[idx];
+	return idx;
+}
+
+struct vertex *get_vert(struct element *restrict element, int vidx)
+{
+	return &element->mesh->vertices[element->vertices[vidx]];
 }
 
 static struct edge *alloc_new_edge()
@@ -159,19 +159,13 @@ static struct edge *alloc_new_edge()
  * node so that (*pprev)->next is the position to insert edge if not found
  */
 static struct edge *find_edge(struct mesh *restrict mesh,
-	struct vertex **v0, struct vertex **v1, struct ht_node **pprev)
+	int v0_idx, int v1_idx, struct ht_node **pprev)
 {
 	/* order v0, v1 by index */
-	int v0_idx = get_vertex_idx(mesh, *v0);
-	int v1_idx = get_vertex_idx(mesh, *v1);
 	if (v0_idx > v1_idx) {
 		int tmp = v0_idx;
 		v0_idx = v1_idx;
 		v1_idx = tmp;
-
-		struct vertex *tmp2 = *v0;
-		*v0 = *v1;
-		*v1 = tmp2;
 	}
 
 	/* key for hash table */
@@ -185,7 +179,7 @@ static struct edge *find_edge(struct mesh *restrict mesh,
 	struct edge *edge = NULL;
 	ht_for_each(&mesh->edges_table, cur, prev, key) {
 		struct edge *tmp = container_of(cur, struct edge, node);
-		if (tmp->vertices[0] == *v0 && tmp->vertices[1] == *v1) {
+		if (tmp->vertices[0] == v0_idx && tmp->vertices[1] == v1_idx) {
 			edge = tmp;
 			break;
 		}
@@ -197,10 +191,10 @@ static struct edge *find_edge(struct mesh *restrict mesh,
 	return edge;
 }
 
-struct edge *mesh_add_get_edge(struct mesh *restrict mesh, struct vertex *v0, struct vertex *v1)
+struct edge *mesh_add_get_edge(struct mesh *restrict mesh, int v0, int v1)
 {
 	struct ht_node *prev;
-	struct edge *edge = find_edge(mesh, &v0, &v1, &prev);
+	struct edge *edge = find_edge(mesh, v0, v1, &prev);
 
 	if (edge == NULL) {
 		/* not found in ht */
@@ -270,9 +264,9 @@ static void triangle_compute_area(struct triangle *restrict triangle)
 {
 	struct vec2 v10, v20;
 
-	struct vec2 *v0 = &triangle->element.vertices[0]->pos;
-	struct vec2 *v1 = &triangle->element.vertices[1]->pos;
-	struct vec2 *v2 = &triangle->element.vertices[2]->pos;
+	struct vec2 *v0 = &get_vert(&triangle->element, 0)->pos;
+	struct vec2 *v1 = &get_vert(&triangle->element, 1)->pos;
+	struct vec2 *v2 = &get_vert(&triangle->element, 2)->pos;
 
 	/* area = 0.5 * cross product of edges */
 	vec2_sub(v1, v0, &v10);
@@ -290,9 +284,9 @@ static void triangle_compute_dof(struct triangle *restrict triangle)
 
 	for (int i = 0; i < 3; i++) {
 		/* v0 is the vertex where the function will be 1 */
-		struct vec2 *v0 = &triangle->element.vertices[(i+0)%3]->pos;
-		struct vec2 *v1 = &triangle->element.vertices[(i+1)%3]->pos;
-		struct vec2 *v2 = &triangle->element.vertices[(i+2)%3]->pos;
+		struct vec2 *v0 = &get_vert(&triangle->element, (i+0)%3)->pos;
+		struct vec2 *v1 = &get_vert(&triangle->element, (i+1)%3)->pos;
+		struct vec2 *v2 = &get_vert(&triangle->element, (i+2)%3)->pos;
 
 		/* gram schmidt to get perp vector to opposite edge of v0 */
 		vec2_sub(v0, v1, &v01);
@@ -311,11 +305,11 @@ static float triangle_dof(struct triangle *restrict triangle, int vertex, float 
 	struct vec2 vxy;
 	vxy.x[0] = x;
 	vxy.x[1] = y;
-	return 1 + vec2_dot(&triangle->dof_grad[vertex], &vxy) - vec2_dot(&triangle->dof_grad[vertex], &triangle->element.vertices[vertex]->pos);
+	return 1 + vec2_dot(&triangle->dof_grad[vertex], &vxy) - vec2_dot(&triangle->dof_grad[vertex], &get_vert(&triangle->element, vertex)->pos);
 }
 
-struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0,
-	struct vertex *v1, struct vertex *v2, float density, float elasticity)
+struct triangle *mesh_add_triangle(struct mesh *restrict mesh, int v0,
+	int v1, int v2, float density, float elasticity)
 {
 	struct triangle *triangle = malloc(sizeof(*triangle));
 	if (triangle == NULL || mesh_add_element(mesh, &triangle->element) != 0) {
@@ -355,13 +349,13 @@ void triangle_stiffness_add(struct sparse *restrict A, struct element *restrict 
 
 	/* mn: triangle vertex loops */
 	for (int m = 0; m < 3; m++) {
-		struct vertex *vm = element->vertices[m];
+		struct vertex *vm = get_vert(element, m);
 		if (!vm->enabled) {
 			continue;
 		}
 
 		for (int n = 0; n < 3; n++) {
-			struct vertex *vn = element->vertices[n];
+			struct vertex *vn = get_vert(element, n);
 			if (!vn->enabled) {
 				continue;
 			}
@@ -395,7 +389,7 @@ void triangle_forces_add(struct vec *restrict b, struct element *restrict elemen
 	/* gravity acting on vertex */
 	float third_weight = triangle->area * element->density / 3;
 	for (int n = 0; n < 3; n++) {
-		struct vertex *v = element->vertices[n];
+		struct vertex *v = get_vert(element, n);
 		if (v->enabled) {
 			int i = v->id;
 			b->x[DIM*i + 1] += -third_weight;
@@ -411,11 +405,12 @@ void triangle_scalar_stress(struct vec *restrict c, struct element *restrict ele
 	float syy = 0;
 
 	for (int m = 0; m < 3; m++) {
-		if (!element->vertices[m]->enabled) {
+		struct vertex *vert = get_vert(element, m);
+		if (!vert->enabled) {
 			continue;
 		}
 
-		int i = element->vertices[m]->id;
+		int i = vert->id;
 
 		sxx += c->x[2*i] * triangle->dof_grad[m].x[0];
 		syy += c->x[2*i + 1] * triangle->dof_grad[m].x[1];
@@ -541,27 +536,29 @@ static void canon_triangle2_compute_all()
 }
 
 /** midpoints for edges */
-static void triangle2_add_edge_midpoints(struct triangle2 *restrict triangle2, struct vertex *v0, struct vertex *v1, struct vertex *v2)
+static void triangle2_add_edge_midpoints(struct triangle2 *restrict triangle2, int v0, int v1, int v2)
 {
 	struct vec2 midpoint;
-	struct vertex *midv;
+	int midv;
 
-	vec2_midpoint(&v0->pos, &v1->pos, &midpoint);
-	if ((midv = mesh_add_vertex(triangle2->element.mesh, midpoint.x[0], midpoint.x[1], true)) == NULL) {
+	struct mesh *restrict mesh = triangle2->element.mesh;
+
+	vec2_midpoint(&mesh->vertices[v0].pos, &mesh->vertices[v1].pos, &midpoint);
+	if ((midv = mesh_add_vertex(triangle2->element.mesh, midpoint.x[0], midpoint.x[1], true)) < 0) {
 		raise(SIGSEGV);
 	}
 	triangle2->element.edges[0]->vertices[2] = midv;
 	triangle2->element.vertices[5] = midv;
 
-	vec2_midpoint(&v1->pos, &v2->pos, &midpoint);
-	if ((midv = mesh_add_vertex(triangle2->element.mesh, midpoint.x[0], midpoint.x[1], true)) == NULL) {
+	vec2_midpoint(&mesh->vertices[v1].pos, &mesh->vertices[v2].pos, &midpoint);
+	if ((midv = mesh_add_vertex(triangle2->element.mesh, midpoint.x[0], midpoint.x[1], true)) < 0) {
 		raise(SIGSEGV);
 	}
 	triangle2->element.edges[1]->vertices[2] = midv;
 	triangle2->element.vertices[3] = midv;
 
-	vec2_midpoint(&v2->pos, &v0->pos, &midpoint);
-	if ((midv = mesh_add_vertex(triangle2->element.mesh, midpoint.x[0], midpoint.x[1], true)) == NULL) {
+	vec2_midpoint(&mesh->vertices[v2].pos, &mesh->vertices[v0].pos, &midpoint);
+	if ((midv = mesh_add_vertex(triangle2->element.mesh, midpoint.x[0], midpoint.x[1], true)) < 0) {
 		raise(SIGSEGV);
 	}
 	triangle2->element.edges[2]->vertices[2] = midv;
@@ -571,9 +568,9 @@ static void triangle2_add_edge_midpoints(struct triangle2 *restrict triangle2, s
 static void triangle2_compute_geometry(struct triangle2 *restrict triangle2)
 {
 	struct vec2 v01, v02;
-	struct vec2 *v0 = &triangle2->element.vertices[0]->pos;
-	struct vec2 *v1 = &triangle2->element.vertices[1]->pos;
-	struct vec2 *v2 = &triangle2->element.vertices[2]->pos;
+	struct vec2 *v0 = &get_vert(&triangle2->element, 0)->pos;
+	struct vec2 *v1 = &get_vert(&triangle2->element, 1)->pos;
+	struct vec2 *v2 = &get_vert(&triangle2->element, 2)->pos;
 
 	vec2_sub(v1, v0, &v01);
 	vec2_sub(v2, v0, &v02);
@@ -590,8 +587,8 @@ static void triangle2_compute_geometry(struct triangle2 *restrict triangle2)
 	triangle2->inv_J[1][1] = triangle2->J[0][0] / triangle2->jacob;
 }
 
-struct triangle2 *mesh_add_triangle2(struct mesh *restrict mesh, struct vertex *v0,
-	struct vertex *v1, struct vertex *v2, float density, float elasticity)
+struct triangle2 *mesh_add_triangle2(struct mesh *restrict mesh, int v0,
+	int v1, int v2, float density, float elasticity)
 {
 	struct triangle2 *triangle2 = malloc(sizeof(*triangle2));
 	if (triangle2 == NULL || mesh_add_element(mesh, &triangle2->element) != 0) {
@@ -630,7 +627,7 @@ void triangle2_stiffness_add(struct sparse *restrict A, struct element *restrict
 
 	for (int v0 = 0; v0 < TRIANGLE2_NVERTEX; v0++) {
 
-	struct vertex *vert0 = element->vertices[v0];
+	struct vertex *vert0 = get_vert(element, v0);
 	if (!vert0->enabled) {
 		continue;
 	}
@@ -638,7 +635,7 @@ void triangle2_stiffness_add(struct sparse *restrict A, struct element *restrict
 
 	for (int v1 = 0; v1 < TRIANGLE2_NVERTEX; v1++) {
 
-	struct vertex *vert1 = element->vertices[v1];
+	struct vertex *vert1 = get_vert(element, v1);
 	if (!vert1->enabled) {
 		continue;
 	}
@@ -676,7 +673,7 @@ void triangle2_forces_add(struct vec *restrict b, struct element *restrict eleme
 
 	float factor = triangle2->jacob * element->density;
 	for (int v = 0; v < TRIANGLE2_NVERTEX; v++) {
-		struct vertex *vert = element->vertices[v];
+		struct vertex *vert = get_vert(element, v);
 		if (!vert->enabled) {
 			continue;
 		}

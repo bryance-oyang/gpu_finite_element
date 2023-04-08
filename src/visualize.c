@@ -73,7 +73,7 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 	/* determine min/max of coordinates */
 	for (int i = 0; i < mesh->nelements; i++) {
 		for (int j = 0; j < 3; j++) {
-			struct vertex *restrict v = mesh->elements[i]->vertices[j];
+			struct vertex *restrict v = get_vert(mesh->elements[i], j);
 			int idx = v->id;
 			float coord;
 			for (int k = 0; k < DIM; k++) {
@@ -106,7 +106,7 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 	 * x0,y0,x1,y1,x2,y2,stress */
 	for (int i = 0; i < mesh->nelements; i++) {
 		for (int j = 0; j < 3; j++) {
-			struct vertex *restrict v = mesh->elements[i]->vertices[j];
+			struct vertex *restrict v = get_vert(mesh->elements[i], j);
 			int idx = v->id;
 			float coord;
 			for (int k = 0; k < DIM; k++) {

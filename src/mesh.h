@@ -32,14 +32,14 @@ struct edge {
 
 	bool is_boundary;
 	/* 0,1 are defining vertices, but also can contain midpoint */
-	struct vertex *vertices[3];
+	int vertices[3];
 };
 
 struct face {
 	struct ht_node node;
 
 	bool is_boundary;
-	struct vertex *vertices[4];
+	int vertices[4];
 };
 
 struct element {
@@ -47,7 +47,8 @@ struct element {
 	struct mesh *mesh;
 
 	int nvertices;
-	struct vertex *vertices[ELEMENT_MAX_VERTICES];
+	/* indices of vertices */
+	int vertices[ELEMENT_MAX_VERTICES];
 	int nedges;
 	struct edge *edges[ELEMENT_MAX_EDGES];
 	int nfaces;
@@ -107,20 +108,21 @@ struct triangle2 {
 
 int mesh_init(struct mesh *restrict mesh);
 void mesh_destroy(struct mesh *restrict mesh);
-struct vertex *mesh_add_vertex(struct mesh *restrict mesh, float x, float y, bool enabled);
+int mesh_add_vertex(struct mesh *restrict mesh, float x, float y, bool enabled);
+struct vertex *get_vert(struct element *restrict element, int vidx);
 struct edge *mesh_add_edge(struct mesh *restrict mesh, struct vertex *v0, struct vertex *v1);
 void mesh_assign_vertex_ids(struct mesh *restrict mesh);
 void mesh_construct_problem(struct mesh *restrict mesh, struct sparse *restrict A, struct vec *b);
 void mesh_scalar_stress(struct mesh *restrict mesh, struct vec *restrict c);
 
-struct triangle *mesh_add_triangle(struct mesh *restrict mesh, struct vertex *v0,
-	struct vertex *v1, struct vertex *v2, float density, float elasticity);
+struct triangle *mesh_add_triangle(struct mesh *restrict mesh, int v0,
+	int v1, int v2, float density, float elasticity);
 void triangle_stiffness_add(struct sparse *restrict A, struct element *restrict element);
 void triangle_forces_add(struct vec *restrict b, struct element *restrict element);
 void triangle_scalar_stress(struct vec *restrict c, struct element *restrict element);
 
-struct triangle2 *mesh_add_triangle2(struct mesh *restrict mesh, struct vertex *v0,
-	struct vertex *v1, struct vertex *v2, float density, float elasticity);
+struct triangle2 *mesh_add_triangle2(struct mesh *restrict mesh, int v0,
+	int v1, int v2, float density, float elasticity);
 void triangle2_stiffness_add(struct sparse *restrict A, struct element *restrict element);
 void triangle2_forces_add(struct vec *restrict b, struct element *restrict element);
 void triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element);
