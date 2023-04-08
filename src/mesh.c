@@ -163,7 +163,7 @@ static struct edge *find_edge(struct mesh *restrict mesh,
 	int *v0, int *v1, struct ht_node **pprev)
 {
 	/* order v0, v1 by index */
-	if (v0 > v1) {
+	if (*v0 > *v1) {
 		int tmp = *v0;
 		*v0 = *v1;
 		*v1 = tmp;
