@@ -95,6 +95,11 @@ struct triangle {
  *    |    .
  *   0|-----1
  *       5
+ *
+ * The dof's are pulling each vertex in the x and y direction by 1 unit while
+ * keeping all others fixed. For v: vertex, d: direction (xy), i: vector index,
+ * u_{vdi} = f_v delta_{di} where f_v is the quadratic function 1 at v and 0 for
+ * other vertices, determined by coefficients in canonical triangle
  */
 struct triangle2 {
 	struct element element;

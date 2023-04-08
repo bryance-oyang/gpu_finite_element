@@ -40,18 +40,22 @@ static struct element_vtable triangle_vtable = {
 #define TRIANGLE2_NCOEFF 6
 #define TRIANGLE2_NDCOEFF 3
 
+/**
+ * f_v = function 1 on vertex v and 0 on others
+ * f_v = a_0 r^2 + a_1 rs + a_2 s^2 + a_3 r + a_4 s + a_5
+ */
 static struct canon_triangle2 {
 	int is_computed;
 	/* r^2 + rs + s^2 + r + s + 1 */
-	float a[TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NVECIND][TRIANGLE2_NCOEFF];
-	/* A r + B s + C */
-	float Da[TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NVECIND][TRIANGLE2_NDERIV][TRIANGLE2_NDCOEFF];
+	float a[TRIANGLE2_NVERTEX][TRIANGLE2_NCOEFF];
+	/* A_0 r + A_1 s + A_2 */
+	float Da[TRIANGLE2_NVERTEX][TRIANGLE2_NDERIV][TRIANGLE2_NDCOEFF];
 	/* integrals of r^2, rs, s^2, r, s, 1 */
 	float I0[TRIANGLE2_NCOEFF];
-	/* D_i u_{mj} D_k u^l_n: the vector and deriv ind are to be contracted with the metric and inv metric resp */
-	float I1[TRIANGLE2_NVERTEX][TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NXY][TRIANGLE2_NVECIND][TRIANGLE2_NVECIND][TRIANGLE2_NDERIV][TRIANGLE2_NDERIV];
+	/* integral of D_dr0 f_v0 D_dr1 f_v1 */
+	float I1[TRIANGLE2_NVERTEX][TRIANGLE2_NVERTEX][TRIANGLE2_NDERIV][TRIANGLE2_NDERIV];
 	/* u^j_m  */
-	float I3[TRIANGLE2_NVERTEX][TRIANGLE2_NXY][TRIANGLE2_NVECIND];
+	float I3[TRIANGLE2_NVERTEX];
 } canon_triangle2;
 
 static struct element_vtable triangle2_vtable = {
@@ -455,49 +459,41 @@ static void canon_triangle2_acoeff()
 	get_inverse(M, dim, inv_M);
 	for (int i = 0; i < dim; i++) {
 	for (int j = 0; j < dim; j++) {
-	for (int xy = 0; xy < TRIANGLE2_NXY; xy++) {
-		canon_triangle2.a[j][xy][xy][i] = inv_M[i*dim + j];
-	}}}
+		canon_triangle2.a[j][i] = inv_M[i*dim + j];
+	}}
 }
 
 static void canon_triangle2_Dacoeff()
 {
 	for (int v = 0; v < TRIANGLE2_NVERTEX; v++) {
-	for (int xy = 0; xy < TRIANGLE2_NXY; xy++) {
-	for (int r = 0; r < TRIANGLE2_NVECIND; r++) {
-		canon_triangle2.Da[v][xy][r][0][0] = 2 * canon_triangle2.a[v][xy][r][0];
-		canon_triangle2.Da[v][xy][r][0][1] = canon_triangle2.a[v][xy][r][1];
-		canon_triangle2.Da[v][xy][r][0][2] = canon_triangle2.a[v][xy][r][3];
+		canon_triangle2.Da[v][0][0] = 2 * canon_triangle2.a[v][0];
+		canon_triangle2.Da[v][0][1] = canon_triangle2.a[v][1];
+		canon_triangle2.Da[v][0][2] = canon_triangle2.a[v][3];
 
-		canon_triangle2.Da[v][xy][r][1][0] = canon_triangle2.a[v][xy][r][1];
-		canon_triangle2.Da[v][xy][r][1][1] = 2 * canon_triangle2.a[v][xy][r][2];
-		canon_triangle2.Da[v][xy][r][1][2] = canon_triangle2.a[v][xy][r][4];
-	}}}
+		canon_triangle2.Da[v][1][0] = canon_triangle2.a[v][1];
+		canon_triangle2.Da[v][1][1] = 2 * canon_triangle2.a[v][2];
+		canon_triangle2.Da[v][1][2] = canon_triangle2.a[v][4];
+	}
 }
 
 static void canon_triangle2_I1()
 {
 	for (int v0 = 0; v0 < TRIANGLE2_NVERTEX; v0++) {
 	for (int v1 = 0; v1 < TRIANGLE2_NVERTEX; v1++) {
-	for (int xy0 = 0; xy0 < TRIANGLE2_NXY; xy0++) {
-	for (int xy1 = 0; xy1 < TRIANGLE2_NXY; xy1++) {
-	for (int r0 = 0; r0 < TRIANGLE2_NVECIND; r0++) {
-	for (int r1 = 0; r1 < TRIANGLE2_NVECIND; r1++) {
 	for (int dr0 = 0; dr0 < TRIANGLE2_NDERIV; dr0++) {
 	for (int dr1 = 0; dr1 < TRIANGLE2_NDERIV; dr1++) {
-		canon_triangle2.I1[v0][v1][xy0][xy1][r0][r1][dr0][dr1] = canon_triangle2_integral_grad(
-			canon_triangle2.Da[v0][xy0][r0][dr0],
-			canon_triangle2.Da[v1][xy1][r1][dr1]
+		canon_triangle2.I1[v0][v1][dr0][dr1] = canon_triangle2_integral_grad(
+			canon_triangle2.Da[v0][dr0],
+			canon_triangle2.Da[v1][dr1]
 		);
-	}}}}}}}}
+	}}}}
 }
 
 static void canon_triangle2_I3()
 {
 	for (int v = 0; v < TRIANGLE2_NVERTEX; v++) {
 	for (int c = 0; c < TRIANGLE2_NCOEFF; c++) {
-		canon_triangle2.I3[v][0][0] += canon_triangle2.a[v][0][0][c] * canon_triangle2.I0[c];
-		canon_triangle2.I3[v][1][1] += canon_triangle2.a[v][0][0][c] * canon_triangle2.I0[c];
+		canon_triangle2.I3[v] += canon_triangle2.a[v][c] * canon_triangle2.I0[c];
 	}}
 }
 
@@ -640,22 +636,19 @@ void triangle2_stiffness_add(struct sparse *restrict A, struct element *restrict
 
 	float entry = 0;
 
-	for (int r0 = 0; r0 < TRIANGLE2_NVECIND; r0++) {
-	for (int r1 = 0; r1 < TRIANGLE2_NVECIND; r1++) {
 	for (int dr0 = 0; dr0 < TRIANGLE2_NDERIV; dr0++) {
 	for (int dr1 = 0; dr1 < TRIANGLE2_NDERIV; dr1++) {
-	for (int i = 0; i < 2; i++) {
-	for (int j = 0; j < 2; j++) {
+	/* D_i u_j D^i u^j */
+	if (xy0 == xy1) {
+		for (int i = 0; i < 2; i++) {
+			entry += canon_triangle2.I1[v0][v1][dr0][dr1]
+				* triangle2->inv_J[dr0][i] * triangle2->inv_J[dr1][i];
+		}
+	}
 
-	entry += canon_triangle2.I1[v0][v1][xy0][xy1][r0][r1][dr0][dr1]
-		* triangle2->N[i][r0] * triangle2->N[i][r1]
-		* triangle2->inv_J[dr0][j] * triangle2->inv_J[dr1][j];
-
-	entry += canon_triangle2.I1[v0][v1][xy0][xy1][r0][r1][dr0][dr1]
-		* triangle2->N[i][r0] * triangle2->N[j][r1]
-		* triangle2->inv_J[dr0][j] * triangle2->inv_J[dr1][i];
-
-	}}}}}}
+	entry += canon_triangle2.I1[v0][v1][dr0][dr1]
+		* triangle2->inv_J[dr0][xy1] * triangle2->inv_J[dr1][xy0];
+	}}
 
 	entry *= triangle2->jacob * element->elasticity / 2;
 	sparse_add(A, 2*id0 + xy0, 2*id1 + xy1, entry);
@@ -670,21 +663,14 @@ void triangle2_forces_add(struct vec *restrict b, struct element *restrict eleme
 	float factor = triangle2->jacob * element->density;
 
 	for (int v = 0; v < TRIANGLE2_NVERTEX; v++) {
+		struct vertex *vert = get_vert(element, v);
+		if (!vert->enabled) {
+			continue;
+		}
+		int id = vert->id;
 
-	struct vertex *vert = get_vert(element, v);
-	if (!vert->enabled) {
-		continue;
+		b->x[2*id + 1] -= factor * canon_triangle2.I3[v];
 	}
-	int id = vert->id;
-
-	for (int xy = 0; xy < TRIANGLE2_NXY; xy++) {
-	for (int r = 0; r < TRIANGLE2_NVECIND; r++) {
-
-	b->x[2*id + xy] -= factor
-		* canon_triangle2.I3[v][xy][r]
-		* triangle2->N[1][r];
-
-	}}}
 }
 
 void triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element)
