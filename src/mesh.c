@@ -318,8 +318,6 @@ struct triangle *mesh_add_triangle(struct mesh *restrict mesh, int v0,
 	triangle->element.density = density;
 	triangle->element.elasticity = elasticity;
 
-	triangle->stress_computed = false;
-
 	/*
 	triangle->element.nedges = 3;
 	triangle->element.edges[0] = mesh_add_edge(mesh, v0, v1);
@@ -396,9 +394,6 @@ float triangle_scalar_stress(struct vec *restrict c, struct element *restrict el
 	(void)y;
 
 	struct triangle *triangle = container_of(element, struct triangle, element);
-	if (triangle->stress_computed) {
-		return triangle->scalar_stress;
-	}
 
 	float sxx = 0;
 	float sxy = 0;
@@ -426,7 +421,6 @@ float triangle_scalar_stress(struct vec *restrict c, struct element *restrict el
 	syy += pressure;
 
 	triangle->scalar_stress = sqrtf(1.5 * (SQR(sxx) + 2*SQR(sxy) + SQR(syy)));
-	triangle->stress_computed = true;
 
 	return triangle->scalar_stress;
 }

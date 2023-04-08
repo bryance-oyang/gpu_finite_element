@@ -84,7 +84,6 @@ struct triangle {
 	float area;
 	struct vec2 dof_grad[3];
 
-	bool stress_computed;
 	float scalar_stress;
 };
 
