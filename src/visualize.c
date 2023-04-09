@@ -221,9 +221,9 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 					vis->data[(i*IMAGE_WIDTH + j)*3 + k] = 0;
 				}
 				double value = lin_scale(stress, min_stress, max_stress, 0, 1);
-				vis->data[(i*IMAGE_WIDTH + j)*3 + 0] = 194*value;
-				vis->data[(i*IMAGE_WIDTH + j)*3 + 1] = 63 + 192*value;
-				vis->data[(i*IMAGE_WIDTH + j)*3 + 2] = 37 + 218*value;
+				vis->data[(i*IMAGE_WIDTH + j)*3 + 0] = 149*value;
+				vis->data[(i*IMAGE_WIDTH + j)*3 + 1] = 36 + 219*value;
+				vis->data[(i*IMAGE_WIDTH + j)*3 + 2] = 18 + 237*value;
 			}
 		}
 	}
