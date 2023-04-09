@@ -18,10 +18,39 @@
 #endif /* DEBUG */
 
 #include <unistd.h>
+#include <time.h>
 
 #include "load_obj.h"
 #include "visualize.h"
 #include "finite_element.h"
+
+static struct timespec start, end;
+
+static void benchmark_start()
+{
+#ifdef CLOCK_MONOTONIC
+		if (clock_gettime(CLOCK_MONOTONIC, &start) != 0) {
+			clock_gettime(CLOCK_REALTIME, &start);
+		}
+#else
+		clock_gettime(CLOCK_REALTIME, &start);
+#endif /* CLOCK_MONOTONIC */
+}
+
+static void benchmark_end(const char *msg)
+{
+#ifdef CLOCK_MONOTONIC
+		if (clock_gettime(CLOCK_MONOTONIC, &end) != 0) {
+			clock_gettime(CLOCK_REALTIME, &end);
+		}
+#else
+		clock_gettime(CLOCK_REALTIME, &end);
+#endif /* CLOCK_MONOTONIC */
+
+	float msec = (end.tv_sec - start.tv_sec)*1e3 + (end.tv_nsec - start.tv_nsec)*1e-6;
+	printf(msg, msec);
+}
+
 
 int main()
 {
@@ -46,24 +75,30 @@ int main()
 	struct finite_element_problem problem;
 	printf("initing...\n");
 	fflush(stdout);
+	benchmark_start();
 	if (fep_init(&problem, &mesh) != 0) {
 		printf("error in fep_init!!!!!!!!!!!!!!\n");
 		return -1;
 	}
+	benchmark_end("benchmarked build time: %g ms\n");
 
 	printf("solving...\n");
 	fflush(stdout);
+	benchmark_start();
 	if (fep_solve(&problem, 0.001, &vis) != 0) {
 		printf("error in fep_solve!!!!!!!!!!!!!!\n");
 		return -1;
 	}
+	benchmark_end("benchmarked solve time: %g ms\n");
 
 #ifndef GPU_COMPUTE
 	printf("=== Running cpu only version (for gpu acceleration, compile with `make gpu`) ===\n");
 #endif /* GPU_COMPUTE */
 	fflush(stdout);
 
+	benchmark_start();
 	vis_fill(&vis, &mesh, &problem.c);
+	benchmark_end("benchmarked vis time: %g ms\n");
 	for (;;) {
 		vis_send(&vis);
 		sleep(1);
