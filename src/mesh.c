@@ -72,6 +72,50 @@ static struct element_vtable triangle2_vtable = {
 	.scalar_stress = triangle2_scalar_stress,
 };
 
+/* helper function for computing stresses in triangle by mapping xy to rs coords */
+static void canon_triangle_coord(struct vec *restrict c,
+	struct element *restrict element, float *restrict xy, float *restrict rs)
+{
+	struct vec2 vxy = {.x = {xy[0], xy[1]}};
+	struct vec2 v[3];
+	struct vec2 v01, v02, xy0;
+	float J[2][2];
+	float inv_J[2][2];
+
+	for (int i = 0; i < 3; i++) {
+		struct vertex *restrict vert = get_vert(element, i);
+		v[i] = vert->pos;
+		if (vert->enabled) {
+			int id = vert->id;
+			for (int k = 0; k < 2; k++) {
+				v[i].x[k] += c->x[2*id + k];
+			}
+		}
+	}
+
+	vec2_sub(&v[1], &v[0], &v01);
+	vec2_sub(&v[2], &v[0], &v02);
+	vec2_sub(&vxy, &v[0], &xy0);
+
+	for (int i = 0; i < 2; i++) {
+		J[i][0] = v01.x[i];
+		J[i][1] = v02.x[i];
+	}
+
+	float inv_det_J = 1.0f / (J[0][0] * J[1][1] - J[0][1] * J[1][0]);
+	inv_J[0][0] = J[1][1] * inv_det_J;
+	inv_J[1][1] = J[0][0] * inv_det_J;
+	inv_J[0][1] = -J[0][1] * inv_det_J;
+	inv_J[1][0] = -J[1][0] * inv_det_J;
+
+	rs[0] = 0;
+	rs[1] = 0;
+	for (int j = 0; j < 2; j++) {
+		rs[0] += inv_J[0][j] * xy0.x[j];
+		rs[1] += inv_J[1][j] * xy0.x[j];
+	}
+}
+
 int mesh_init(struct mesh *restrict mesh)
 {
 	mesh->nvertices = 0;
@@ -388,10 +432,13 @@ void triangle_forces_add(struct vec *restrict b, struct element *restrict elemen
 	}
 }
 
-float triangle_scalar_stress(struct vec *restrict c, struct element *restrict element, float x, float y)
+float triangle_scalar_stress(struct vec *restrict c, struct element *restrict element, float *x)
 {
-	(void)x;
-	(void)y;
+	float rs[2];
+	canon_triangle_coord(c, element, x, rs);
+	if (!(rs[0] >= 0 && rs[1] >= 0 && rs[0] + rs[1] <= 1)) {
+		return NAN;
+	}
 
 	struct triangle *triangle = container_of(element, struct triangle, element);
 
@@ -659,56 +706,14 @@ void triangle2_forces_add(struct vec *restrict b, struct element *restrict eleme
 	}
 }
 
-/* take xy in deformed config to rs in canonical */
-static void triangle2_map_xy(struct vec *restrict c, struct element *restrict element, float x, float y, float *r, float *s)
+float triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element, float *x)
 {
-	float J[2][2];
-	float inv_J[2][2];
-
-	struct vec2 v[3];
-	struct vec2 v01, v02, xy, xy0;
-	for (int i = 0; i < 3; i++) {
-		struct vertex *vert = get_vert(element, i);
-		int id = vert->id;
-		v[i] = vert->pos;
-
-		if (vert->enabled) {
-			/* position after being strained */
-			v[i].x[0] += c->x[2*id + 0];
-			v[i].x[1] += c->x[2*id + 1];
-		}
-	}
-
-	xy.x[0] = x;
-	xy.x[1] = y;
-	vec2_sub(&v[1], &v[0], &v01);
-	vec2_sub(&v[2], &v[0], &v02);
-	vec2_sub(&xy, &v[0], &xy0);
-
-	for (int i = 0; i < 2; i++) {
-		J[i][0] = v01.x[i];
-		J[i][1] = v02.x[i];
-	}
-
-	float det_J = J[0][0] * J[1][1] - J[0][1] * J[1][0];
-	inv_J[0][0] = J[1][1] / det_J;
-	inv_J[0][1] = -J[0][1] / det_J;
-	inv_J[1][0] = -J[1][0] / det_J;
-	inv_J[1][1] = J[0][0] / det_J;
-
-	*r = 0;
-	*s = 0;
-
-	for (int j = 0; j < 2; j++) {
-		*r += inv_J[0][j] * xy0.x[j];
-		*s += inv_J[1][j] * xy0.x[j];
-	}
-}
-
-float triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element, float x, float y)
-{
+	/* canonical coordinates and additional 1 for easier index contraction */
 	float r[3] = {0, 0, 1};
-	triangle2_map_xy(c, element, x, y, &r[0], &r[1]);
+	canon_triangle_coord(c, element, x, r);
+	if (!(r[0] >= 0 && r[1] >= 0 && r[0] + r[1] <= 1)) {
+		return NAN;
+	}
 
 	struct triangle2 *restrict triangle2 = container_of(element, struct triangle2, element);
 
@@ -728,12 +733,18 @@ float triangle2_scalar_stress(struct vec *restrict c, struct element *restrict e
 			* canon_triangle2.Da[v][dr][d]
 			* r[d]
 			* c->x[2*id + j];
-
-		s[i][j] += triangle2->inv_J[dr][j]
-			* canon_triangle2.Da[v][dr][d]
-			* r[d]
-			* c->x[2*id + i];
 	}}}}}
+
+	/* symmetrize */
+	s[0][0] *= 2;
+	s[1][1] *= 2;
+	s[0][1] += s[1][0];
+	s[1][0] = s[0][1];
+
+	for (int i = 0; i < 2; i++) {
+	for (int j = 0; j < 2; j++) {
+		s[i][j] *= 0.5 * element->elasticity;
+	}}
 
 	float pressure = -0.5 * (s[0][0] + s[1][1]);
 	s[0][0] += pressure;

@@ -28,7 +28,6 @@ struct vis {
 
 	int nsorted_stresses;
 	float *sorted_stresses;
-	struct element *cached_element;
 
 	float min_x;
 	float max_x;

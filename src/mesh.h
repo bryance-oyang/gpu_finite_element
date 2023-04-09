@@ -61,7 +61,7 @@ struct element {
 struct element_vtable {
 	void (*stiffness_add)(struct sparse *restrict A, struct element *restrict element);
 	void (*forces_add)(struct vec *restrict b, struct element *restrict element);
-	float (*scalar_stress)(struct vec *restrict c, struct element *restrict element, float x, float y);
+	float (*scalar_stress)(struct vec *restrict c, struct element *restrict element, float *x);
 };
 
 struct mesh {
@@ -122,12 +122,12 @@ struct triangle *mesh_add_triangle(struct mesh *restrict mesh, int v0,
 	int v1, int v2, float density, float elasticity);
 void triangle_stiffness_add(struct sparse *restrict A, struct element *restrict element);
 void triangle_forces_add(struct vec *restrict b, struct element *restrict element);
-float triangle_scalar_stress(struct vec *restrict c, struct element *restrict element, float x, float y);
+float triangle_scalar_stress(struct vec *restrict c, struct element *restrict element, float *x);
 
 struct triangle2 *mesh_add_triangle2(struct mesh *restrict mesh, int v0,
 	int v1, int v2, float density, float elasticity);
 void triangle2_stiffness_add(struct sparse *restrict A, struct element *restrict element);
 void triangle2_forces_add(struct vec *restrict b, struct element *restrict element);
-float triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element, float x, float y);
+float triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element, float *x);
 
 #endif /* MESH_H */

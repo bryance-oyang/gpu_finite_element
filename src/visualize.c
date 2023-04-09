@@ -18,6 +18,12 @@
 #include "mesh.h"
 #include "ws_ctube.h"
 
+struct bounding_box {
+	/* [x/y][min/max] */
+	float xy[2][2];
+	int ij[2][2];
+};
+
 /* linearly map x in lo, hi to Lo, Hi */
 static int32_t lin_scale(float x, float lo, float hi, int32_t Lo, int32_t Hi)
 {
@@ -76,52 +82,42 @@ static void get_ij(struct vis *restrict vis, float x, float y, int *i, int *j)
 {
 	*i = -(y - vis->mid_y) / vis->slope + IMAGE_HEIGHT / 2;
 	*j = (x - vis->mid_x) / vis->slope + IMAGE_WIDTH / 2;
+
+	if (*i < 0) {
+		*i = 0;
+	} else if (*i >= IMAGE_HEIGHT) {
+		*i = IMAGE_HEIGHT - 1;
+	}
+	if (*j < 0) {
+		*j = 0;
+	} else if (*j >= IMAGE_WIDTH) {
+		*j = IMAGE_WIDTH - 1;
+	}
 }
 
-static bool xy_in_triangle(struct element *restrict element, struct vec *restrict c, float x, float y)
+static struct bounding_box triangle_bounding_box(struct vis *restrict vis, struct element *restrict element, struct vec *restrict c)
 {
-	struct vec2 v[3];
+	struct bounding_box bb = {
+		.xy = {{FLT_MAX, -FLT_MAX}, {FLT_MAX, -FLT_MAX}}
+	};
 
-	for (int i = 0; i < 3; i++) {
-		struct vertex *vert = get_vert(element, i);
+	for (int v = 0; v < 3; v++) {
+		struct vertex *restrict vert = get_vert(element, v);
 		int id = vert->id;
-		v[i] = vert->pos;
-
-		if (vert->enabled) {
-			/* position after being strained */
-			v[i].x[0] += c->x[2*id + 0];
-			v[i].x[1] += c->x[2*id + 1];
+		for (int k = 0; k < 2; k++) {
+			float coord = vert->pos.x[k];
+			if (vert->enabled) {
+				coord += c->x[2*id + k];
+			}
+			bb.xy[k][0] = fminf(bb.xy[k][0], coord);
+			bb.xy[k][1] = fmaxf(bb.xy[k][1], coord);
 		}
 	}
 
-	struct vec2 w = {.x = {x, y}};
-	struct vec2 w0, v01;
-	float crosses[3];
-	for (int i = 0; i < 3; i++) {
-		vec2_sub(&v[(i+1)%3], &v[i], &v01);
-		vec2_sub(&w, &v[i], &w0);
-		crosses[i] = v01.x[0] * w0.x[1] - v01.x[1] * w0.x[0];
-	}
+	get_ij(vis, bb.xy[0][0], bb.xy[1][1], &bb.ij[0][0], &bb.ij[1][0]);
+	get_ij(vis, bb.xy[0][1], bb.xy[1][0], &bb.ij[0][1], &bb.ij[1][1]);
 
-	return (crosses[0] >= 0 && crosses[1] >= 0 && crosses[2] >= 0)
-		|| (crosses[0] <= 0 && crosses[1] <= 0 && crosses[2] <= 0);
-}
-
-static struct element *xy_to_element(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *restrict c, float x, float y)
-{
-	if (vis->cached_element != NULL && xy_in_triangle(vis->cached_element, c, x, y)) {
-		return vis->cached_element;
-	}
-
-	for (int i = 0; i < mesh->nelements; i++) {
-		struct element *element = mesh->elements[i];
-		if (xy_in_triangle(element, c, x, y)) {
-			vis->cached_element = element;
-			return element;
-		}
-	}
-
-	return NULL;
+	return bb;
 }
 
 int vis_init(struct vis *restrict vis, struct mesh *restrict mesh)
@@ -147,7 +143,6 @@ int vis_init(struct vis *restrict vis, struct mesh *restrict mesh)
 		goto err_noctube;
 	}
 
-	vis->cached_element = NULL;
 	get_scaling(vis, mesh);
 	return 0;
 
@@ -178,21 +173,28 @@ static int number_cmp(const void *a, const void *b)
 
 static void fill_stresses(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *restrict c)
 {
-	float x, y;
+	float xy[2];
 	vis->nsorted_stresses = 0;
 
-	for (int i = 0; i < IMAGE_HEIGHT; i++) {
-		for (int j = 0; j < IMAGE_WIDTH; j++) {
-			get_xy(vis, i, j, &x, &y);
-			struct element *element = xy_to_element(vis, mesh, c, x, y);
-			if (element == NULL) {
-				vis->stresses[i*IMAGE_WIDTH + j] = NAN;
-			} else {
-				float stress = element->vtable->scalar_stress(c, element, x, y);
-				vis->stresses[i*IMAGE_WIDTH + j] = stress;
+	for (int i = 0; i < IMAGE_HEIGHT * IMAGE_WIDTH; i++) {
+		vis->stresses[i] = NAN;
+	}
 
-				vis->sorted_stresses[vis->nsorted_stresses] = stress;
-				vis->nsorted_stresses++;
+	for (int e = 0; e < mesh->nelements; e++) {
+		struct element *element = mesh->elements[e];
+		struct bounding_box bb = triangle_bounding_box(vis, element, c);
+		for (int i = bb.ij[0][0]; i <= bb.ij[0][1]; i++) {
+			for (int j = bb.ij[1][0]; j <= bb.ij[1][1]; j++) {
+				get_xy(vis, i, j, &xy[0], &xy[1]);
+				float stress = element->vtable->scalar_stress(c, element, xy);
+				if (isnan(vis->stresses[i*IMAGE_WIDTH + j])) {
+					vis->stresses[i*IMAGE_WIDTH + j] = stress;
+				}
+
+				if (!isnan(stress)) {
+					vis->sorted_stresses[vis->nsorted_stresses] = stress;
+					vis->nsorted_stresses++;
+				}
 			}
 		}
 	}
