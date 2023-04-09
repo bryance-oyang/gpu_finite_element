@@ -55,15 +55,15 @@ static struct element_vtable triangle_vtable = {
 static struct canon_triangle2 {
 	int is_computed;
 	/* r^2 + rs + s^2 + r + s + 1 */
-	float a[TRIANGLE2_NVERTEX][TRIANGLE2_NCOEFF];
+	double a[TRIANGLE2_NVERTEX][TRIANGLE2_NCOEFF];
 	/* A_0 r + A_1 s + A_2 */
-	float Da[TRIANGLE2_NVERTEX][TRIANGLE2_NDERIV][TRIANGLE2_NDCOEFF];
+	double Da[TRIANGLE2_NVERTEX][TRIANGLE2_NDERIV][TRIANGLE2_NDCOEFF];
 	/* integrals of r^2, rs, s^2, r, s, 1 */
-	float I0[TRIANGLE2_NCOEFF];
+	double I0[TRIANGLE2_NCOEFF];
 	/* integral of D_dr0 f_v0 D_dr1 f_v1 */
-	float I1[TRIANGLE2_NVERTEX][TRIANGLE2_NVERTEX][TRIANGLE2_NDERIV][TRIANGLE2_NDERIV];
+	double I1[TRIANGLE2_NVERTEX][TRIANGLE2_NVERTEX][TRIANGLE2_NDERIV][TRIANGLE2_NDERIV];
 	/* integral of f_v  */
-	float I2[TRIANGLE2_NVERTEX];
+	double I2[TRIANGLE2_NVERTEX];
 } canon_triangle2;
 
 static struct element_vtable triangle2_vtable = {
@@ -74,13 +74,13 @@ static struct element_vtable triangle2_vtable = {
 
 /* helper function for computing stresses in triangle by mapping xy to rs coords */
 static void canon_triangle_coord(struct vec *restrict c,
-	struct element *restrict element, float *restrict xy, float *restrict rs)
+	struct element *restrict element, double *restrict xy, double *restrict rs)
 {
 	struct vec2 vxy = {.x = {xy[0], xy[1]}};
 	struct vec2 v[3];
 	struct vec2 v01, v02, xy0;
-	float J[2][2];
-	float inv_J[2][2];
+	double J[2][2];
+	double inv_J[2][2];
 
 	for (int i = 0; i < 3; i++) {
 		struct vertex *restrict vert = get_vert(element, i);
@@ -102,7 +102,7 @@ static void canon_triangle_coord(struct vec *restrict c,
 		J[i][1] = v02.x[i];
 	}
 
-	float inv_det_J = 1.0f / (J[0][0] * J[1][1] - J[0][1] * J[1][0]);
+	double inv_det_J = 1.0 / (J[0][0] * J[1][1] - J[0][1] * J[1][0]);
 	inv_J[0][0] = J[1][1] * inv_det_J;
 	inv_J[1][1] = J[0][0] * inv_det_J;
 	inv_J[0][1] = -J[0][1] * inv_det_J;
@@ -166,7 +166,7 @@ void mesh_destroy(struct mesh *restrict mesh)
 	ht_destroy(&mesh->faces_table);
 }
 
-int mesh_add_vertex(struct mesh *restrict mesh, float x, float y, bool enabled)
+int mesh_add_vertex(struct mesh *restrict mesh, double x, double y, bool enabled)
 {
 	if (mesh->nvertices == mesh->vertices_size) {
 		int size = mesh->vertices_size * 2;
@@ -315,7 +315,7 @@ static void triangle_compute_area(struct triangle *restrict triangle)
 	/* area = 0.5 * cross product of edges */
 	vec2_sub(v1, v0, &v10);
 	vec2_sub(v2, v0, &v20);
-	triangle->area = fabsf(0.5f * (v10.x[0]*v20.x[1] - v10.x[1]*v20.x[0]));
+	triangle->area = fabs(0.5 * (v10.x[0]*v20.x[1] - v10.x[1]*v20.x[0]));
 }
 
 /**
@@ -338,13 +338,13 @@ static void triangle_compute_dof(struct triangle *restrict triangle)
 		vec2_scale(vec2_dot(&v01, &v21) / vec2_dot(&v21, &v21), &v21);
 		vec2_sub(&v01, &v21, &triangle->dof_grad[(i+0)%3]);
 
-		float s = 1.0f / vec2_dot(&v01, &triangle->dof_grad[(i+0)%3]);
+		double s = 1.0 / vec2_dot(&v01, &triangle->dof_grad[(i+0)%3]);
 		vec2_scale(s, &triangle->dof_grad[(i+0)%3]);
 	}
 }
 
 struct triangle *mesh_add_triangle(struct mesh *restrict mesh, int v0,
-	int v1, int v2, float density, float elasticity)
+	int v1, int v2, double density, double elasticity)
 {
 	struct triangle *triangle = malloc(sizeof(*triangle));
 	if (triangle == NULL || mesh_add_element(mesh, &triangle->element) != 0) {
@@ -401,7 +401,7 @@ void triangle_stiffness_add(struct sparse *restrict A, struct element *restrict 
 			/* rs: xy loops */
 			for (int r = 0; r < DIM; r++) {
 				for (int s = 0; s < DIM; s++) {
-					float entry = 0;
+					double entry = 0;
 					if (r == s) {
 						/* (D_i u_j) (D^i u^j) */
 						entry += vec2_dot(&triangle->dof_grad[m], &triangle->dof_grad[n]);
@@ -422,7 +422,7 @@ void triangle_forces_add(struct vec *restrict b, struct element *restrict elemen
 	struct triangle *triangle = container_of(element, struct triangle, element);
 
 	/* gravity acting on vertex */
-	float third_weight = triangle->area * element->density / 3;
+	double third_weight = triangle->area * element->density / 3;
 	for (int n = 0; n < 3; n++) {
 		struct vertex *v = get_vert(element, n);
 		if (v->enabled) {
@@ -432,9 +432,9 @@ void triangle_forces_add(struct vec *restrict b, struct element *restrict elemen
 	}
 }
 
-float triangle_scalar_stress(struct vec *restrict c, struct element *restrict element, float *x)
+double triangle_scalar_stress(struct vec *restrict c, struct element *restrict element, double *x)
 {
-	float rs[2];
+	double rs[2];
 	canon_triangle_coord(c, element, x, rs);
 	if (!(rs[0] >= 0 && rs[1] >= 0 && rs[0] + rs[1] <= 1)) {
 		return NAN;
@@ -442,9 +442,9 @@ float triangle_scalar_stress(struct vec *restrict c, struct element *restrict el
 
 	struct triangle *triangle = container_of(element, struct triangle, element);
 
-	float sxx = 0;
-	float sxy = 0;
-	float syy = 0;
+	double sxx = 0;
+	double sxy = 0;
+	double syy = 0;
 
 	for (int m = 0; m < 3; m++) {
 		struct vertex *vert = get_vert(element, m);
@@ -456,18 +456,18 @@ float triangle_scalar_stress(struct vec *restrict c, struct element *restrict el
 
 		sxx += c->x[2*i] * triangle->dof_grad[m].x[0];
 		syy += c->x[2*i + 1] * triangle->dof_grad[m].x[1];
-		sxy += 0.5f * (c->x[2*i] * triangle->dof_grad[m].x[1] + c->x[2*i + 1] * triangle->dof_grad[m].x[0]);
+		sxy += 0.5 * (c->x[2*i] * triangle->dof_grad[m].x[1] + c->x[2*i + 1] * triangle->dof_grad[m].x[0]);
 	}
 
 	sxx *= element->elasticity;
 	sxy *= element->elasticity;
 	syy *= element->elasticity;
 
-	float pressure = -0.5f * (sxx + syy);
+	double pressure = -0.5 * (sxx + syy);
 	sxx += pressure;
 	syy += pressure;
 
-	triangle->scalar_stress = sqrtf(1.5 * (SQR(sxx) + 2*SQR(sxy) + SQR(syy)));
+	triangle->scalar_stress = sqrt(1.5 * (SQR(sxx) + 2*SQR(sxy) + SQR(syy)));
 
 	return triangle->scalar_stress;
 }
@@ -475,7 +475,7 @@ float triangle_scalar_stress(struct vec *restrict c, struct element *restrict el
 /**
  * integrates (A[0] r + A[1] s + A[2]) * (D[0] r + D[1] s + D[2])
  */
-static float canon_triangle2_integral_grad(float *A, float *D)
+static double canon_triangle2_integral_grad(double *A, double *D)
 {
 	return
 	canon_triangle2.I0[0] * (A[0]*D[0] + A[1]*D[1]) +
@@ -487,7 +487,7 @@ static float canon_triangle2_integral_grad(float *A, float *D)
 static void canon_triangle2_acoeff()
 {
 	int dim = 6;
-	float M[36] = {
+	double M[36] = {
 	/*	r^2	rs	s^2	r	s	1 */
 		0,	0,	0,	0,	0,	1,	/* vertex 0 */
 		1,	0,	0,	1,	0,	1,	/* vertex 1 */
@@ -497,7 +497,7 @@ static void canon_triangle2_acoeff()
 		0.25,	0,	0,	0.5,	0,	1	/* vertex 5 */
 	};
 
-	float inv_M[36];
+	double inv_M[36];
 	get_inverse(M, dim, inv_M);
 	for (int i = 0; i < dim; i++) {
 	for (int j = 0; j < dim; j++) {
@@ -541,12 +541,12 @@ static void canon_triangle2_I3()
 
 static void canon_triangle2_compute_all()
 {
-	canon_triangle2.I0[0] = 1.0f/12.0f; /* r^2 */
-	canon_triangle2.I0[1] = 1.0f/24.0f; /* rs */
-	canon_triangle2.I0[2] = 1.0f/12.0f; /* s^2 */
-	canon_triangle2.I0[3] = 1.0f/6.0f; /* r */
-	canon_triangle2.I0[4] = 1.0f/6.0f; /* s */
-	canon_triangle2.I0[5] = 0.5f; /* 1 */
+	canon_triangle2.I0[0] = 1.0/12.0; /* r^2 */
+	canon_triangle2.I0[1] = 1.0/24.0; /* rs */
+	canon_triangle2.I0[2] = 1.0/12.0; /* s^2 */
+	canon_triangle2.I0[3] = 1.0/6.0; /* r */
+	canon_triangle2.I0[4] = 1.0/6.0; /* s */
+	canon_triangle2.I0[5] = 0.5; /* 1 */
 
 	canon_triangle2_acoeff();
 	canon_triangle2_Dacoeff();
@@ -590,7 +590,7 @@ static void triangle2_add_edge_midpoints(struct triangle2 *restrict triangle2, i
 
 static void triangle2_compute_geometry(struct triangle2 *restrict triangle2)
 {
-	float J[2][2];
+	double J[2][2];
 	struct vec2 v01, v02;
 	struct vec2 *v0 = &get_vert(&triangle2->element, 0)->pos;
 	struct vec2 *v1 = &get_vert(&triangle2->element, 1)->pos;
@@ -603,16 +603,16 @@ static void triangle2_compute_geometry(struct triangle2 *restrict triangle2)
 		J[i][1] = v02.x[i];
 	}
 
-	float det_J = J[0][0] * J[1][1] - J[0][1] * J[1][0];
+	double det_J = J[0][0] * J[1][1] - J[0][1] * J[1][0];
 	triangle2->inv_J[0][0] = J[1][1] / det_J;
 	triangle2->inv_J[0][1] = -J[0][1] / det_J;
 	triangle2->inv_J[1][0] = -J[1][0] / det_J;
 	triangle2->inv_J[1][1] = J[0][0] / det_J;
-	triangle2->jacob = fabsf(det_J);
+	triangle2->jacob = fabs(det_J);
 }
 
 struct triangle2 *mesh_add_triangle2(struct mesh *restrict mesh, int v0,
-	int v1, int v2, float density, float elasticity)
+	int v1, int v2, double density, double elasticity)
 {
 	struct triangle2 *triangle2 = malloc(sizeof(*triangle2));
 	if (triangle2 == NULL || mesh_add_element(mesh, &triangle2->element) != 0) {
@@ -666,7 +666,7 @@ void triangle2_stiffness_add(struct sparse *restrict A, struct element *restrict
 
 		for (int xy0 = 0; xy0 < TRIANGLE2_NXY; xy0++) {
 		for (int xy1 = 0; xy1 < TRIANGLE2_NXY; xy1++) {
-			float entry = 0;
+			double entry = 0;
 
 			for (int dr0 = 0; dr0 < TRIANGLE2_NDERIV; dr0++) {
 			for (int dr1 = 0; dr1 < TRIANGLE2_NDERIV; dr1++) {
@@ -693,7 +693,7 @@ void triangle2_forces_add(struct vec *restrict b, struct element *restrict eleme
 {
 	struct triangle2 *triangle2 = container_of(element, struct triangle2, element);
 
-	float factor = triangle2->jacob * element->density;
+	double factor = triangle2->jacob * element->density;
 
 	for (int v = 0; v < TRIANGLE2_NVERTEX; v++) {
 		struct vertex *vert = get_vert(element, v);
@@ -706,10 +706,10 @@ void triangle2_forces_add(struct vec *restrict b, struct element *restrict eleme
 	}
 }
 
-float triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element, float *x)
+double triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element, double *x)
 {
 	/* canonical coordinates and additional 1 for easier index contraction */
-	float r[3] = {0, 0, 1};
+	double r[3] = {0, 0, 1};
 	canon_triangle_coord(c, element, x, r);
 	if (!(r[0] >= 0 && r[1] >= 0 && r[0] + r[1] <= 1)) {
 		return NAN;
@@ -717,7 +717,7 @@ float triangle2_scalar_stress(struct vec *restrict c, struct element *restrict e
 
 	struct triangle2 *restrict triangle2 = container_of(element, struct triangle2, element);
 
-	float s[2][2] = {{0, 0}, {0, 0}};
+	double s[2][2] = {{0, 0}, {0, 0}};
 	for (int v = 0; v < TRIANGLE2_NVERTEX; v++) {
 	struct vertex *vert = get_vert(element, v);
 	if (!vert->enabled) {
@@ -746,9 +746,9 @@ float triangle2_scalar_stress(struct vec *restrict c, struct element *restrict e
 		s[i][j] *= 0.5 * element->elasticity;
 	}}
 
-	float pressure = -0.5 * (s[0][0] + s[1][1]);
+	double pressure = -0.5 * (s[0][0] + s[1][1]);
 	s[0][0] += pressure;
 	s[1][1] += pressure;
 
-	return sqrtf(1.5 * (SQR(s[0][0]) + 2*SQR(s[0][1]) + SQR(s[1][1])));
+	return sqrt(1.5 * (SQR(s[0][0]) + 2*SQR(s[0][1]) + SQR(s[1][1])));
 }

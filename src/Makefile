@@ -2,7 +2,7 @@ EXEC=a.out
 srcdir=
 
 SHELL=/bin/sh
-CC=gcc -pipe -mtune=native -march=native -pthread -fsingle-precision-constant
+CC=gcc -pipe -mtune=native -march=native -pthread
 OFLAGS=-O3 -flto
 CFLAGS+=-std=gnu17 -Wall -Wextra
 LDFLAGS=-lc -lm

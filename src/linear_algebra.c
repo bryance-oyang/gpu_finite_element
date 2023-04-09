@@ -74,7 +74,7 @@ void sparse_destroy(struct sparse *restrict S)
 }
 
 /* insert nonexistent */
-int sparse_add(struct sparse *restrict S, int row, int col, float entry)
+int sparse_add(struct sparse *restrict S, int row, int col, double entry)
 {
 	if (S->len == S->size) {
 		int new_size = 2 * S->size;
@@ -113,9 +113,9 @@ static inline void swap_int(int *a, int *b)
 	*b = tmp;
 }
 
-static inline void swap_float(float *a, float *b)
+static inline void swap_double(double *a, double *b)
 {
-	float tmp = *a;
+	double tmp = *a;
 	*a = *b;
 	*b = tmp;
 }
@@ -130,14 +130,14 @@ static int sparse_partition(struct sparse *restrict S, int lo, int hi)
 		if (sparse_row_col_cmp(S->row[j], S->col[j], prow, pcol) < 0) {
 			swap_int(&S->row[i], &S->row[j]);
 			swap_int(&S->col[i], &S->col[j]);
-			swap_float(&S->A[i], &S->A[j]);
+			swap_double(&S->A[i], &S->A[j]);
 			i++;
 		}
 	}
 
 	swap_int(&S->row[i], &S->row[hi - 1]);
 	swap_int(&S->col[i], &S->col[hi - 1]);
-	swap_float(&S->A[i], &S->A[hi - 1]);
+	swap_double(&S->A[i], &S->A[hi - 1]);
 	return i;
 }
 
@@ -218,9 +218,9 @@ void sparse_mult_vec(const struct sparse *restrict S, const struct vec *restrict
 	}
 }
 
-float vec_dot(const struct vec *a, const struct vec *b)
+double vec_dot(const struct vec *a, const struct vec *b)
 {
-	float result = 0;
+	double result = 0;
 	int dim = a->dim;
 
 	for (int i = 0; i < dim; i++) {
@@ -256,7 +256,7 @@ void vec_sub(struct vec *a, struct vec *b, struct vec *out)
 }
 
 /* scalar multiply */
-void vec_scale(float scalar, struct vec *restrict v)
+void vec_scale(double scalar, struct vec *restrict v)
 {
 	for (int i = 0; i < v->dim; i++) {
 		v->x[i] *= scalar;
@@ -284,16 +284,16 @@ void vec2_sub(struct vec2 *a, struct vec2 *b, struct vec2 *out)
 	}
 }
 
-void vec2_scale(float scalar, struct vec2 *restrict v)
+void vec2_scale(double scalar, struct vec2 *restrict v)
 {
 	for (int i = 0; i < 2; i++) {
 		v->x[i] *= scalar;
 	}
 }
 
-float vec2_dot(struct vec2 *a, struct vec2 *b)
+double vec2_dot(struct vec2 *a, struct vec2 *b)
 {
-	float result = 0;
+	double result = 0;
 	for (int i = 0; i < 2; i++) {
 		result += a->x[i] * b->x[i];
 	}
@@ -302,8 +302,8 @@ float vec2_dot(struct vec2 *a, struct vec2 *b)
 
 void vec2_normalize(struct vec2 *restrict v)
 {
-	float norm = sqrtf(vec2_dot(v, v));
-	vec2_scale(1.0f/norm, v);
+	double norm = sqrt(vec2_dot(v, v));
+	vec2_scale(1.0/norm, v);
 }
 
 void vec2_midpoint(struct vec2 *a, struct vec2 *b, struct vec2 *out)
@@ -312,9 +312,9 @@ void vec2_midpoint(struct vec2 *a, struct vec2 *b, struct vec2 *out)
 	vec2_scale(0.5, out);
 }
 
-static float minor(float *restrict matrix, int dim, int i, int j)
+static double minor(double *restrict matrix, int dim, int i, int j)
 {
-	float *restrict sub = malloc((dim - 1) * (dim - 1) * sizeof(*sub));
+	double *restrict sub = malloc((dim - 1) * (dim - 1) * sizeof(*sub));
 	if (sub == NULL) {
 		raise(SIGSEGV);
 	}
@@ -333,19 +333,19 @@ static float minor(float *restrict matrix, int dim, int i, int j)
 		iii++;
 	}
 
-	float sub_det = det(sub, dim - 1);
+	double sub_det = det(sub, dim - 1);
 	free(sub);
 	return sub_det;
 }
 
-float det(float *restrict matrix, int dim)
+double det(double *restrict matrix, int dim)
 {
 	if (dim == 1) {
 		return *matrix;
 	}
 
 	int sgn = 1;
-	float result = 0;
+	double result = 0;
 	for (int j = 0; j < dim; j++) {
 		result += sgn * matrix[j] * minor(matrix, dim, 0, j);
 		sgn *= -1;
@@ -353,9 +353,9 @@ float det(float *restrict matrix, int dim)
 	return result;
 }
 
-void get_inverse(float *restrict matrix, int dim, float *restrict inverse)
+void get_inverse(double *restrict matrix, int dim, double *restrict inverse)
 {
-	float inv_det = 1.0f / det(matrix, dim);
+	double inv_det = 1.0 / det(matrix, dim);
 
 	for (int i = 0; i < dim; i++) {
 		for (int j = 0; j < dim; j++) {
@@ -369,11 +369,11 @@ void get_inverse(float *restrict matrix, int dim, float *restrict inverse)
 }
 
 int sparse_conj_grad(struct sparse *restrict A, struct vec *restrict b,
-	struct vec *restrict c, float tolerance, struct vis *restrict vis,
+	struct vec *restrict c, double tolerance, struct vis *restrict vis,
 	struct mesh *restrict mesh)
 {
-	float bsquared;
-	float alpha, beta, old_r2, dAd;
+	double bsquared;
+	double alpha, beta, old_r2, dAd;
 	struct vec r, d, A_d;
 
 	bsquared = vec_dot(b, b);

@@ -65,7 +65,7 @@ void fep_destroy(struct finite_element_problem *restrict p)
 	sparse_destroy(&p->A);
 }
 
-int fep_solve(struct finite_element_problem *restrict p, float tolerance, struct vis *restrict vis)
+int fep_solve(struct finite_element_problem *restrict p, double tolerance, struct vis *restrict vis)
 {
 	int retval;
 

@@ -29,13 +29,13 @@ int load_obj(char *filename, struct mesh *mesh, int elasticity)
 	size_t line_size;
 
 	while (getline(&line, &line_size, file) > 0) {
-		float n0, n1, n2;
+		double n0, n1, n2;
 		int v0, v1, v2, _v0, _v1, _v2, v0_, v1_, v2_;
 
-		if (sscanf(line, "v %f %f %f", &n0, &n1, &n2) == 3) {
+		if (sscanf(line, "v %lf %lf %lf", &n0, &n1, &n2) == 3) {
 			bool enabled = true;
-			float x = n0;
-			float y = -n2;
+			double x = n0;
+			double y = -n2;
 
 			if (x < 0) {
 				enabled = false;

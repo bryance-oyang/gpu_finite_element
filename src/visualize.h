@@ -24,20 +24,20 @@ struct vis {
 	size_t data_bytes;
 	uint16_t *data;
 
-	float *stresses;
+	double *stresses;
 
 	int nsorted_stresses;
-	float *sorted_stresses;
+	double *sorted_stresses;
 
-	float min_x;
-	float max_x;
-	float mid_x;
+	double min_x;
+	double max_x;
+	double mid_x;
 
-	float min_y;
-	float max_y;
-	float mid_y;
+	double min_y;
+	double max_y;
+	double mid_y;
 
-	float slope;
+	double slope;
 };
 
 int vis_init(struct vis *restrict vis, struct mesh *restrict mesh);

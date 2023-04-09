@@ -47,7 +47,7 @@ static void benchmark_end(const char *msg)
 		clock_gettime(CLOCK_REALTIME, &end);
 #endif /* CLOCK_MONOTONIC */
 
-	float msec = (end.tv_sec - start.tv_sec)*1e3 + (end.tv_nsec - start.tv_nsec)*1e-6;
+	double msec = (end.tv_sec - start.tv_sec)*1e3 + (end.tv_nsec - start.tv_nsec)*1e-6;
 	printf(msg, msec);
 }
 

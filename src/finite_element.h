@@ -40,15 +40,15 @@ struct finite_element_problem {
 
 	int32_t *gpu_rows;
 	int32_t *gpu_cols;
-	float *gpu_A;
+	double *gpu_A;
 
-	float *gpu_b;
-	float *gpu_c;
+	double *gpu_b;
+	double *gpu_c;
 
-	float *gpu_r;
-	float *gpu_d;
+	double *gpu_r;
+	double *gpu_d;
 
-	float *gpu_A_d;
+	double *gpu_A_d;
 
 	cusparseSpMatDescr_t descr_A;
 	cusparseDnVecDescr_t descr_d;
@@ -61,6 +61,6 @@ struct finite_element_problem {
 
 int fep_init(struct finite_element_problem *restrict p, struct mesh *restrict mesh);
 void fep_destroy(struct finite_element_problem *restrict p);
-int fep_solve(struct finite_element_problem *restrict p, float tolerance, struct vis *restrict vis);
+int fep_solve(struct finite_element_problem *restrict p, double tolerance, struct vis *restrict vis);
 
 #endif /* FINITE_ELEMENT_H */

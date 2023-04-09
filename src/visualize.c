@@ -20,12 +20,12 @@
 
 struct bounding_box {
 	/* [x/y][min/max] */
-	float xy[2][2];
+	double xy[2][2];
 	int ij[2][2];
 };
 
 /* linearly map x in lo, hi to Lo, Hi */
-static float lin_scale(float x, float lo, float hi, float Lo, float Hi)
+static double lin_scale(double x, double lo, double hi, double Lo, double Hi)
 {
 	if (hi - lo < EPSILON) {
 		return 0;
@@ -50,35 +50,35 @@ static void get_scaling(struct vis *restrict vis, struct mesh *restrict mesh)
 		struct element *restrict element = mesh->elements[i];
 		for (int v = 0; v < element->nvertices; v++) {
 			struct vertex *restrict vert = get_vert(element, v);
-			float x = vert->pos.x[0];
-			float y = vert->pos.x[1];
-			vis->min_x = fminf(vis->min_x, x);
-			vis->min_y = fminf(vis->min_y, y);
-			vis->max_x = fmaxf(vis->max_x, x);
-			vis->max_y = fmaxf(vis->max_y, y);
+			double x = vert->pos.x[0];
+			double y = vert->pos.x[1];
+			vis->min_x = fmin(vis->min_x, x);
+			vis->min_y = fmin(vis->min_y, y);
+			vis->max_x = fmax(vis->max_x, x);
+			vis->max_y = fmax(vis->max_y, y);
 		}
 	}
 
-	vis->mid_x = 0.5f * (vis->min_x + vis->max_x);
-	vis->mid_y = 0.5f * (vis->min_y + vis->max_y);
+	vis->mid_x = 0.5 * (vis->min_x + vis->max_x);
+	vis->mid_y = 0.5 * (vis->min_y + vis->max_y);
 
-	float dx = vis->max_x - vis->min_x;
-	float dy = vis->max_y - vis->min_y;
+	double dx = vis->max_x - vis->min_x;
+	double dy = vis->max_y - vis->min_y;
 	vis->max_x += 0.1*dx;
 	vis->min_x -= 0.1*dx;
 	vis->max_y += 0.1*dy;
 	vis->min_y -= 0.1*dy;
 
-	vis->slope = fmaxf((vis->max_x - vis->min_x) / IMAGE_WIDTH, (vis->max_y - vis->min_y) / IMAGE_HEIGHT);
+	vis->slope = fmax((vis->max_x - vis->min_x) / IMAGE_WIDTH, (vis->max_y - vis->min_y) / IMAGE_HEIGHT);
 }
 
-static void get_xy(struct vis *restrict vis, int i, int j, float *x, float *y)
+static void get_xy(struct vis *restrict vis, int i, int j, double *x, double *y)
 {
 	*x = vis->slope * (j - IMAGE_WIDTH / 2) + vis->mid_x;
 	*y = -vis->slope * (i - IMAGE_HEIGHT / 2) + vis->mid_y;
 }
 
-static void get_ij(struct vis *restrict vis, float x, float y, int *i, int *j)
+static void get_ij(struct vis *restrict vis, double x, double y, int *i, int *j)
 {
 	*i = -(y - vis->mid_y) / vis->slope + IMAGE_HEIGHT / 2;
 	*j = (x - vis->mid_x) / vis->slope + IMAGE_WIDTH / 2;
@@ -105,12 +105,12 @@ static struct bounding_box triangle_bounding_box(struct vis *restrict vis, struc
 		struct vertex *restrict vert = get_vert(element, v);
 		int id = vert->id;
 		for (int k = 0; k < 2; k++) {
-			float coord = vert->pos.x[k];
+			double coord = vert->pos.x[k];
 			if (vert->enabled) {
 				coord += c->x[2*id + k];
 			}
-			bb.xy[k][0] = fminf(bb.xy[k][0], coord);
-			bb.xy[k][1] = fmaxf(bb.xy[k][1], coord);
+			bb.xy[k][0] = fmin(bb.xy[k][0], coord);
+			bb.xy[k][1] = fmax(bb.xy[k][1], coord);
 		}
 	}
 
@@ -166,14 +166,14 @@ void vis_destroy(struct vis *restrict vis)
 
 static int number_cmp(const void *a, const void *b)
 {
-	float aa = *(float *)a;
-	float bb = *(float *)b;
+	double aa = *(double *)a;
+	double bb = *(double *)b;
 	return (aa > bb) - (aa < bb);
 }
 
 static void fill_stresses(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *restrict c)
 {
-	float xy[2];
+	double xy[2];
 	vis->nsorted_stresses = 0;
 
 	for (int i = 0; i < IMAGE_HEIGHT * IMAGE_WIDTH; i++) {
@@ -186,7 +186,7 @@ static void fill_stresses(struct vis *restrict vis, struct mesh *restrict mesh, 
 		for (int i = bb.ij[0][0]; i <= bb.ij[0][1]; i++) {
 			for (int j = bb.ij[1][0]; j <= bb.ij[1][1]; j++) {
 				get_xy(vis, i, j, &xy[0], &xy[1]);
-				float stress = element->vtable->scalar_stress(c, element, xy);
+				double stress = element->vtable->scalar_stress(c, element, xy);
 				if (isnan(vis->stresses[i*IMAGE_WIDTH + j])) {
 					vis->stresses[i*IMAGE_WIDTH + j] = stress;
 				}
@@ -206,12 +206,12 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 
 	/* sort and get percentile of stresses by index */
 	qsort(vis->sorted_stresses, vis->nsorted_stresses, sizeof(*vis->sorted_stresses), number_cmp);
-	float min_stress = vis->sorted_stresses[(int)(0.01 * (vis->nsorted_stresses - 1))];
-	float max_stress = vis->sorted_stresses[(int)(0.99 * (vis->nsorted_stresses - 1))];
+	double min_stress = vis->sorted_stresses[(int)(0.01 * (vis->nsorted_stresses - 1))];
+	double max_stress = vis->sorted_stresses[(int)(0.99 * (vis->nsorted_stresses - 1))];
 
 	for (int i = 0; i < IMAGE_HEIGHT; i++) {
 		for (int j = 0; j < IMAGE_WIDTH; j++) {
-			float stress = vis->stresses[i*IMAGE_WIDTH + j];
+			double stress = vis->stresses[i*IMAGE_WIDTH + j];
 			if (isnan(stress)) {
 				for (int k = 0; k < 3; k++) {
 					vis->data[(i*IMAGE_WIDTH + j)*3 + k] = 0;
@@ -220,7 +220,7 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 				for (int k = 0; k < 3; k++) {
 					vis->data[(i*IMAGE_WIDTH + j)*3 + k] = 0;
 				}
-				float value = lin_scale(stress, min_stress, max_stress, 0, 1);
+				double value = lin_scale(stress, min_stress, max_stress, 0, 1);
 				vis->data[(i*IMAGE_WIDTH + j)*3 + 0] = 194*value;
 				vis->data[(i*IMAGE_WIDTH + j)*3 + 1] = 63 + 192*value;
 				vis->data[(i*IMAGE_WIDTH + j)*3 + 2] = 37 + 218*value;
@@ -232,7 +232,7 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 	for (int e = 0; e < mesh->nelements; e++) {
 		for (int v = 0; v < 3; v++) {
 			struct vertex *restrict vert = get_vert(mesh->elements[e], v);
-			float x, y;
+			double x, y;
 			int i, j;
 
 			if (vert->enabled) {

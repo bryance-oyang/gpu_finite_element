@@ -96,23 +96,23 @@ int cuda_init(struct finite_element_problem *restrict p)
 	/* sparse descr */
 	sparse_status = cusparseCreateCoo(
 		&p->descr_A, dim, dim, nnz, p->gpu_rows, p->gpu_cols, p->gpu_A,
-		CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+		CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
 	if (sparse_status != CUSPARSE_STATUS_SUCCESS) {
 		goto err_descr_A;
 	}
 	sparse_status = cusparseCreateDnVec(
-		&p->descr_d, dim, p->gpu_d, CUDA_R_32F);
+		&p->descr_d, dim, p->gpu_d, CUDA_R_64F);
 	if (sparse_status != CUSPARSE_STATUS_SUCCESS) {
 		goto err_descr_d;
 	}
 	sparse_status = cusparseCreateDnVec(
-		&p->descr_A_d, dim, p->gpu_A_d, CUDA_R_32F);
+		&p->descr_A_d, dim, p->gpu_A_d, CUDA_R_64F);
 	if (sparse_status != CUSPARSE_STATUS_SUCCESS) {
 		goto err_descr_A_d;
 	}
 
 	/* scratch buffer */
-	float one = 1, zero = 0;
+	double one = 1, zero = 0;
 	size_t scratch_size;
 	sparse_status = cusparseSpMV_bufferSize(
 		p->sparse_handle,
@@ -122,7 +122,7 @@ int cuda_init(struct finite_element_problem *restrict p)
 		p->descr_d,
 		&zero,
 		p->descr_A_d,
-		CUDA_R_32F,
+		CUDA_R_64F,
 		CUSPARSE_SPMV_COO_ALG2,
 		&scratch_size
 	);
@@ -187,27 +187,27 @@ void cuda_destroy(struct finite_element_problem *restrict p)
 	cublasDestroy_v2(p->blas_handle);
 }
 
-int gpu_conj_gradient(struct finite_element_problem *restrict p, float tolerance)
+int gpu_conj_gradient(struct finite_element_problem *restrict p, double tolerance)
 {
 	cublasStatus_t blas_status = CUBLAS_STATUS_SUCCESS;
 	cusparseStatus_t sparse_status = CUSPARSE_STATUS_SUCCESS;
 	cudaError_t cerr = cudaSuccess;
 
-	const float zero = 0;
-	const float one = 1;
-	const float neg_one = -1;
+	const double zero = 0;
+	const double one = 1;
+	const double neg_one = -1;
 
-	float bsquared;
-	float alpha, beta, old_r2, dAd;
+	double bsquared;
+	double alpha, beta, old_r2, dAd;
 	int dim = p->b.dim;
 
-	blas_status |= cublasSdot_v2(p->blas_handle, dim, p->gpu_b, 1, p->gpu_b, 1, &bsquared);
-	blas_status |= cublasSscal_v2(p->blas_handle, dim, &zero, p->gpu_c, 1);
-	blas_status |= cublasScopy_v2(p->blas_handle, dim, p->gpu_b, 1, p->gpu_r, 1);
-	blas_status |= cublasScopy_v2(p->blas_handle, dim, p->gpu_b, 1, p->gpu_d, 1);
+	blas_status |= cublasDdot_v2(p->blas_handle, dim, p->gpu_b, 1, p->gpu_b, 1, &bsquared);
+	blas_status |= cublasDscal_v2(p->blas_handle, dim, &zero, p->gpu_c, 1);
+	blas_status |= cublasDcopy_v2(p->blas_handle, dim, p->gpu_b, 1, p->gpu_r, 1);
+	blas_status |= cublasDcopy_v2(p->blas_handle, dim, p->gpu_b, 1, p->gpu_d, 1);
 
 	for (int k = 1; k <= dim; k++) {
-		blas_status |= cublasSdot_v2(p->blas_handle, dim, p->gpu_r, 1, p->gpu_r, 1, &old_r2);
+		blas_status |= cublasDdot_v2(p->blas_handle, dim, p->gpu_r, 1, p->gpu_r, 1, &old_r2);
 		if (bsquared > 0 && old_r2 / bsquared <= tolerance) {
 			break;
 		} else if (bsquared == 0 && old_r2 <= tolerance) {
@@ -223,29 +223,29 @@ int gpu_conj_gradient(struct finite_element_problem *restrict p, float tolerance
 			p->descr_d,
 			&zero,
 			p->descr_A_d,
-			CUDA_R_32F,
+			CUDA_R_64F,
 			CUSPARSE_SPMV_COO_ALG2,
 			p->gpu_scratch
 		);
 
 		/* dAd */
-		blas_status |= cublasSdot_v2(p->blas_handle, dim, p->gpu_d, 1, p->gpu_A_d, 1, &dAd);
+		blas_status |= cublasDdot_v2(p->blas_handle, dim, p->gpu_d, 1, p->gpu_A_d, 1, &dAd);
 
 		/* Ad = alpha Ad; d = alpha d; */
 		alpha = old_r2 / dAd;
-		blas_status |= cublasSscal_v2(p->blas_handle, dim, &alpha, p->gpu_A_d, 1);
-		blas_status |= cublasSscal_v2(p->blas_handle, dim, &alpha, p->gpu_d, 1);
+		blas_status |= cublasDscal_v2(p->blas_handle, dim, &alpha, p->gpu_A_d, 1);
+		blas_status |= cublasDscal_v2(p->blas_handle, dim, &alpha, p->gpu_d, 1);
 
 		/* c += alpha d */
-		blas_status |= cublasSaxpy_v2(p->blas_handle, dim, &one, p->gpu_d, 1, p->gpu_c, 1);
+		blas_status |= cublasDaxpy_v2(p->blas_handle, dim, &one, p->gpu_d, 1, p->gpu_c, 1);
 
 		/* r -= alpha Ad */
-		blas_status |= cublasSaxpy_v2(p->blas_handle, dim, &neg_one, p->gpu_A_d, 1, p->gpu_r, 1);
+		blas_status |= cublasDaxpy_v2(p->blas_handle, dim, &neg_one, p->gpu_A_d, 1, p->gpu_r, 1);
 
-		blas_status |= cublasSdot_v2(p->blas_handle, dim, p->gpu_r, 1, p->gpu_r, 1, &beta);
+		blas_status |= cublasDdot_v2(p->blas_handle, dim, p->gpu_r, 1, p->gpu_r, 1, &beta);
 		beta /= old_r2 * alpha;
-		blas_status |= cublasSscal_v2(p->blas_handle, dim, &beta, p->gpu_d, 1);
-		blas_status |= cublasSaxpy_v2(p->blas_handle, dim, &one, p->gpu_r, 1, p->gpu_d, 1);
+		blas_status |= cublasDscal_v2(p->blas_handle, dim, &beta, p->gpu_d, 1);
+		blas_status |= cublasDaxpy_v2(p->blas_handle, dim, &one, p->gpu_r, 1, p->gpu_d, 1);
 	}
 
 	cerr = cudaMemcpy(p->c.x, p->gpu_c, dim*sizeof(*p->gpu_c), cudaMemcpyDeviceToHost);
