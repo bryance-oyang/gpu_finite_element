@@ -5,10 +5,16 @@
 
   <body bgcolor="#808080">
     <h1>finite element method</h1>
+    <div>
+      <input type="checkbox" id="draw_grid_bool" checked>
+      <label for="draw_grid_bool">draw grid</label>
+    </div>
+    <br>
     <canvas id="canvas" style="display: block; margin: auto; padding: 0;"></canvas>
   </body>
 
   <script lang="javascript">
+    const draw_grid_bool = document.getElementById("draw_grid_bool");
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d", {willReadFrequently: true});
     let img_width = 0;
@@ -54,35 +60,36 @@
         }
         ctx.putImageData(img_data, 0, 0);
 
-        // draw grid
-        for (let i = 0; i < ntriangles; i++) {
-          let start_x = 0;
-          let start_y = 0;
-          for (let j = 0; j <= 3; j++) {
-            const x = Array();
-            if (j != 3) {
-              for (let k = 0; k < DIM; k++) {
-                const idx = 3*img_height*img_width + (i*3 + j)*DIM + k;
-                x.push(data.getUint16(2*idx, true));
+        if (draw_grid_bool.checked) {
+          for (let i = 0; i < ntriangles; i++) {
+            let start_x = 0;
+            let start_y = 0;
+            for (let j = 0; j <= 3; j++) {
+              const x = Array();
+              if (j != 3) {
+                for (let k = 0; k < DIM; k++) {
+                  const idx = 3*img_height*img_width + (i*3 + j)*DIM + k;
+                  x.push(data.getUint16(2*idx, true));
+                }
+              } else {
+                x.push(start_x);
+                x.push(start_y);
               }
-            } else {
-              x.push(start_x);
-              x.push(start_y);
+
+              if (j == 0) {
+                ctx.beginPath();
+                ctx.moveTo(x[0], x[1]);
+                start_x = x[0];
+                start_y = x[1];
+              } else {
+                ctx.lineTo(x[0], x[1]);
+              }
             }
 
-            if (j == 0) {
-              ctx.beginPath();
-              ctx.moveTo(x[0], x[1]);
-              start_x = x[0];
-              start_y = x[1];
-            } else {
-              ctx.lineTo(x[0], x[1]);
-            }
+            ctx.lineWidth = 0.28;
+            ctx.strokeStyle = "#000000";
+            ctx.stroke();
           }
-
-          ctx.lineWidth = 0.5;
-          ctx.strokeStyle = "#000000";
-          ctx.stroke();
         }
       };
 
