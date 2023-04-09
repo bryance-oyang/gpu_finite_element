@@ -22,7 +22,7 @@ struct element;
 struct vis {
 	struct ws_ctube *ctube;
 	size_t data_bytes;
-	int32_t *data;
+	uint16_t *data;
 
 	float *stresses;
 

@@ -122,7 +122,7 @@ static struct bounding_box triangle_bounding_box(struct vis *restrict vis, struc
 
 int vis_init(struct vis *restrict vis, struct mesh *restrict mesh)
 {
-	vis->data_bytes = (IMAGE_HEIGHT*IMAGE_WIDTH + 6*mesh->nelements) * sizeof(*vis->data);
+	vis->data_bytes = (3*IMAGE_HEIGHT*IMAGE_WIDTH + 6*mesh->nelements) * sizeof(*vis->data);
 	vis->data = malloc(vis->data_bytes);
 	if (vis->data == NULL) {
 		goto err_nodata;
@@ -213,9 +213,14 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 		for (int j = 0; j < IMAGE_WIDTH; j++) {
 			float stress = vis->stresses[i*IMAGE_WIDTH + j];
 			if (isnan(stress)) {
-				vis->data[i*IMAGE_WIDTH + j] = -1;
+				for (int k = 0; k < 3; k++) {
+					vis->data[(i*IMAGE_WIDTH + j)*3 + k] = 0;
+				}
 			} else {
-				vis->data[i*IMAGE_WIDTH + j] = lin_scale(stress, min_stress, max_stress, 236, 0);
+				for (int k = 0; k < 3; k++) {
+					vis->data[(i*IMAGE_WIDTH + j)*3 + k] = 0;
+				}
+				vis->data[(i*IMAGE_WIDTH + j)*3 + 1] = lin_scale(stress, min_stress, max_stress, 0, 255);
 			}
 		}
 	}
@@ -236,8 +241,8 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 				y = vert->pos.x[1];
 			}
 			get_ij(vis, x, y, &i, &j);
-			vis->data[IMAGE_HEIGHT*IMAGE_WIDTH + (e*3 + v)*DIM + 0] = j;
-			vis->data[IMAGE_HEIGHT*IMAGE_WIDTH + (e*3 + v)*DIM + 1] = i;
+			vis->data[3*IMAGE_HEIGHT*IMAGE_WIDTH + (e*3 + v)*DIM + 0] = j;
+			vis->data[3*IMAGE_HEIGHT*IMAGE_WIDTH + (e*3 + v)*DIM + 1] = i;
 		}
 	}
 }

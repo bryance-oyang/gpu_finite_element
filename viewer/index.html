@@ -10,7 +10,7 @@
 
   <script lang="javascript">
     const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d", {willReadFrequently: true});
+    const ctx = canvas.getContext("2d");
     let img_width = 0;
     let img_height = 0;
 
@@ -40,21 +40,22 @@
 
         const data = new DataView(event.data)
         const DIM = 2;
-        const ntriangles = ((data.byteLength / 4) - img_height*img_width) / 6;
+        const ntriangles = ((data.byteLength / 2) - img_height*img_width*3) / 6;
 
+        const img_data = ctx.getImageData(0, 0, canvas.width, canvas.height);
         for (let i = 0; i < img_height; i++) {
           for (let j = 0; j < img_width; j++) {
-            const stress = data.getInt32(4*(i*img_width + j), true)
-            if (stress >= 0) {
-              ctx.fillStyle = `hsl(${stress}, 100%, 50%)`;
-            } else {
-              ctx.fillStyle = `#000000`;
+            for (let k = 0; k < 3; k++) {
+              const x = data.getUint16(2*((i*img_width + j)*3 + k), true);
+              img_data.data[(i*img_width + j)*4 + k] = x;
             }
-            ctx.fillRect(j, i, 1, 1);
+            img_data.data[(i*img_width + j)*4 + 3] = 255;
           }
         }
+        ctx.putImageData(img_data, 0, 0);
 
         // draw grid
+        /*
         for (let i = 0; i < ntriangles; i++) {
           let start_x = 0;
           let start_y = 0;
@@ -62,8 +63,8 @@
             const x = Array();
             if (j != 3) {
               for (let k = 0; k < DIM; k++) {
-                const idx = img_height * img_width + (i*3 + j)*DIM + k;
-                x.push(data.getInt32(4*idx, true));
+                const idx = 3*img_height*img_width + (i*3 + j)*DIM + k;
+                x.push(data.getUint16(2*idx, true));
               }
             } else {
               x.push(start_x);
@@ -81,9 +82,10 @@
           }
 
           ctx.lineWidth = 0.5;
-          ctx.strokeStyle = "#000000";
+          ctx.strokeStyle = "#FFFFFF";
           ctx.stroke();
         }
+        */
       };
 
       websocket.onopen = (event) => {console.log("connected");};
