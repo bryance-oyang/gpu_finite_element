@@ -25,7 +25,7 @@ struct bounding_box {
 };
 
 /* linearly map x in lo, hi to Lo, Hi */
-static int32_t lin_scale(float x, float lo, float hi, int32_t Lo, int32_t Hi)
+static float lin_scale(float x, float lo, float hi, float Lo, float Hi)
 {
 	if (hi - lo < EPSILON) {
 		return 0;
@@ -220,7 +220,10 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 				for (int k = 0; k < 3; k++) {
 					vis->data[(i*IMAGE_WIDTH + j)*3 + k] = 0;
 				}
-				vis->data[(i*IMAGE_WIDTH + j)*3 + 1] = lin_scale(stress, min_stress, max_stress, 0, 255);
+				float value = lin_scale(stress, min_stress, max_stress, 0, 1);
+				vis->data[(i*IMAGE_WIDTH + j)*3 + 0] = 194*value;
+				vis->data[(i*IMAGE_WIDTH + j)*3 + 1] = 63 + 192*value;
+				vis->data[(i*IMAGE_WIDTH + j)*3 + 2] = 37 + 218*value;
 			}
 		}
 	}

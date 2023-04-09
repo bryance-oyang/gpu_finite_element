@@ -10,7 +10,7 @@
 
   <script lang="javascript">
     const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", {willReadFrequently: true});
     let img_width = 0;
     let img_height = 0;
 
@@ -55,7 +55,6 @@
         ctx.putImageData(img_data, 0, 0);
 
         // draw grid
-        /*
         for (let i = 0; i < ntriangles; i++) {
           let start_x = 0;
           let start_y = 0;
@@ -82,10 +81,9 @@
           }
 
           ctx.lineWidth = 0.5;
-          ctx.strokeStyle = "#FFFFFF";
+          ctx.strokeStyle = "#000000";
           ctx.stroke();
         }
-        */
       };
 
       websocket.onopen = (event) => {console.log("connected");};
