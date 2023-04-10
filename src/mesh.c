@@ -828,13 +828,19 @@ static void canon_triangle3_acoeff()
 static void canon_triangle3_Dacoeff()
 {
 	for (int v = 0; v < TRIANGLE3_NVERTEX; v++) {
-		canon_triangle3.Da[v][0][0] = 2 * canon_triangle3.a[v][0];
-		canon_triangle3.Da[v][0][1] = canon_triangle3.a[v][1];
-		canon_triangle3.Da[v][0][2] = canon_triangle3.a[v][3];
+		canon_triangle3.Da[v][0][0] = 3*canon_triangle3.a[v][0];
+		canon_triangle3.Da[v][0][1] = 2*canon_triangle3.a[v][1];
+		canon_triangle3.Da[v][0][2] = canon_triangle3.a[v][2];
+		canon_triangle3.Da[v][0][3] = 2*canon_triangle3.a[v][4];
+		canon_triangle3.Da[v][0][4] = canon_triangle3.a[v][5];
+		canon_triangle3.Da[v][0][5] = canon_triangle3.a[v][7];
 
-		canon_triangle3.Da[v][1][0] = canon_triangle3.a[v][1];
-		canon_triangle3.Da[v][1][1] = 2 * canon_triangle3.a[v][2];
-		canon_triangle3.Da[v][1][2] = canon_triangle3.a[v][4];
+		canon_triangle3.Da[v][0][0] = canon_triangle3.a[v][1];
+		canon_triangle3.Da[v][0][1] = 2*canon_triangle3.a[v][2];
+		canon_triangle3.Da[v][0][2] = 3*canon_triangle3.a[v][3];
+		canon_triangle3.Da[v][0][3] = canon_triangle3.a[v][5];
+		canon_triangle3.Da[v][0][4] = 2*canon_triangle3.a[v][6];
+		canon_triangle3.Da[v][0][5] = canon_triangle3.a[v][8];
 	}
 }
 
