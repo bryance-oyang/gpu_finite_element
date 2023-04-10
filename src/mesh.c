@@ -970,7 +970,7 @@ struct triangle3 *mesh_add_triangle3(struct mesh *restrict mesh, int v0,
 	element->vtable = &triangle3_vtable;
 	element->mesh = mesh;
 
-	element->nvertices = 10; /* includes midpoints of edges */
+	element->nvertices = 10; /* includes edge points and center point */
 	element->vertices[0] = v0;
 	element->vertices[1] = v1;
 	element->vertices[2] = v2;
@@ -1055,12 +1055,20 @@ void triangle3_forces_add(struct vec *restrict b, struct element *restrict eleme
 
 double triangle3_scalar_stress(struct vec *restrict c, struct element *restrict element, double *x)
 {
-	/* canonical coordinates and additional 1 for easier index contraction */
-	double r[3] = {0, 0, 1};
+	/* canonical coordinates */
+	double r[2] = {0, 0};
 	canon_triangle_coord(c, element, x, r);
 	if (!(r[0] >= 0 && r[1] >= 0 && r[0] + r[1] <= 1)) {
 		return NAN;
 	}
+
+	double r_poly[6];
+	r_poly[0] = SQR(r[0]); /* r^2 */
+	r_poly[1] = r[0] * r[1]; /* rs */
+	r_poly[2] = SQR(r[1]); /* s^2 */
+	r_poly[3] = r[0]; /* r */
+	r_poly[4] = r[1]; /* s */
+	r_poly[5] = 1.0; /* 1 */
 
 	struct triangle3 *restrict triangle3 = container_of(element, struct triangle3, element);
 
@@ -1076,12 +1084,10 @@ double triangle3_scalar_stress(struct vec *restrict c, struct element *restrict 
 	for (int j = 0; j < 2; j++) {
 	for (int dr = 0; dr < TRIANGLE3_NDERIV; dr++) {
 	for (int d = 0; d < TRIANGLE3_NDCOEFF; d++) {
-		/*
 		s[i][j] += triangle3->inv_J[2*dr + i]
 			* canon_triangle3.Da[v][dr][d]
-			* r[d]
+			* r_poly[d]
 			* c->x[2*id + j];
-			*/
 	}}}}}
 
 	/* symmetrize */
