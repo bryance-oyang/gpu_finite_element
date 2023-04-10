@@ -17,7 +17,7 @@
 #include "hash_table.h"
 #include "linear_algebra.h"
 
-#define ELEMENT_MAX_VERTICES 8
+#define ELEMENT_MAX_VERTICES 10
 #define ELEMENT_MAX_EDGES 12
 #define ELEMENT_MAX_FACES 8
 
@@ -31,8 +31,8 @@ struct edge {
 	struct ht_node node;
 
 	bool is_boundary;
-	/* 0,1 are defining vertices, but also can contain midpoint */
-	int vertices[3];
+	/* 0,1 are defining vertices, but also can contain middle points */
+	int vertices[4];
 };
 
 struct face {
@@ -103,6 +103,25 @@ struct triangle {
  * other vertices, determined by coefficients in canonical triangle
  */
 struct triangle2 {
+	struct element element;
+
+	double jacob;
+	/* inv_J[i][j] = dr^i / dx^j */
+	double inv_J[2][2];
+};
+
+/**
+ *    2
+ *    |.
+ *   7| .6
+ *    |  .
+ *   8| 9 .5
+ *    |    .
+ *   0|-----1
+ *      3 4
+ *
+ */
+struct triangle3 {
 	struct element element;
 
 	double jacob;

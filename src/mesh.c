@@ -531,7 +531,7 @@ static void canon_triangle2_I1()
 	}}}}
 }
 
-static void canon_triangle2_I3()
+static void canon_triangle2_I2()
 {
 	for (int v = 0; v < TRIANGLE2_NVERTEX; v++) {
 	for (int c = 0; c < TRIANGLE2_NCOEFF; c++) {
@@ -551,7 +551,7 @@ static void canon_triangle2_compute_all()
 	canon_triangle2_acoeff();
 	canon_triangle2_Dacoeff();
 	canon_triangle2_I1();
-	canon_triangle2_I3();
+	canon_triangle2_I2();
 
 	canon_triangle2.is_computed = 1;
 }
