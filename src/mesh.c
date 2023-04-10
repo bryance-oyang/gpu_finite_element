@@ -22,6 +22,7 @@
 #define HBUF_LEN 256
 char hash_buf[HBUF_LEN];
 
+/** first-order triangle */
 static struct element_vtable triangle_vtable = {
 	.stiffness_add = triangle_stiffness_add,
 	.forces_add = triangle_forces_add,
@@ -29,6 +30,7 @@ static struct element_vtable triangle_vtable = {
 };
 
 /**
+ * second-order triangle:
  * each degree of freedom is a0 r^2 + a1 r s + a2 s^2 + a3 r + a4 s + a5
  * index ordering: vertex, vecind, partial, coeff#
  */
@@ -73,6 +75,7 @@ static struct element_vtable triangle2_vtable = {
 };
 
 /**
+ * third-order triangle:
  * each degree of freedom is a0 r^3 + a1 r^2 s + a2 r s^2 + a3 s^3 + a4 r^2 + a5 r s + a6 s^2 + a7 r + a8 s + a9
  * index ordering: vertex, vecind, partial, coeff#
  */

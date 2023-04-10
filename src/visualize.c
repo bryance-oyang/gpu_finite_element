@@ -124,7 +124,7 @@ static inline void cathedral(double value, uint16_t *rgb)
 {
 	rgb[0] = 194*value;
 	rgb[1] = 36 + 219*value;
-	rgb[2] = 12 + 243*value;
+	rgb[2] = 18 + 237*value;
 }
 
 static inline void rainbow(double value, uint16_t *rgb)
