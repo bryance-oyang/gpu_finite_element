@@ -120,11 +120,55 @@ static struct bounding_box triangle_bounding_box(struct vis *restrict vis, struc
 	return bb;
 }
 
-static void cathedral(double value, uint16_t *rgb)
+static inline void cathedral(double value, uint16_t *rgb)
 {
 	rgb[0] = 194*value;
 	rgb[1] = 36 + 219*value;
 	rgb[2] = 12 + 243*value;
+}
+
+static inline void rainbow(double value, uint16_t *rgb)
+{
+	double H = lin_scale(value, 0, 1, 248, 0);
+	double S = 1;
+	double L = 0.5;
+	double C = (1 - fabs(2*L - 1)) * S;
+	double m = L - C / 2;
+
+	double Hp = H / 60;
+	double Hp_mod2 = Hp - 2 * ((int)Hp / 2);
+	double X = C * (1 - fabs(Hp_mod2 - 1));
+
+	double R, G, B;
+	if (0 <= Hp  && Hp < 1) {
+		R = C;
+		G = X;
+		B = 0;
+	} else if (1 <= Hp  && Hp < 2) {
+		R = X;
+		G = C;
+		B = 0;
+	} else if (2 <= Hp && Hp  < 3) {
+		R = 0;
+		G = C;
+		B = X;
+	} else if (3 <= Hp && Hp  < 4) {
+		R = 0;
+		G = X;
+		B = C;
+	} else if (4 <= Hp && Hp  < 5) {
+		R = X;
+		G = 0;
+		B = C;
+	} else if (5 <= Hp && Hp  < 6) {
+		R = C;
+		G = 0;
+		B = X;
+	}
+
+	rgb[0] = 255*(R + m);
+	rgb[1] = 255*(G + m);
+	rgb[2] = 255*(B + m);
 }
 
 int vis_init(struct vis *restrict vis, struct mesh *restrict mesh)
@@ -225,7 +269,7 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 				}
 			} else {
 				double value = lin_scale(stress, min_stress, max_stress, 0, 1);
-				cathedral(value, &vis->data[(i*IMAGE_WIDTH + j)*3]);
+				rainbow(value, &vis->data[(i*IMAGE_WIDTH + j)*3]);
 			}
 		}
 	}
