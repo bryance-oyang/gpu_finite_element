@@ -1,8 +1,9 @@
 # gpu_finite_element
 A rudimentary proof of concept: GPU accelerated structural stress analysis using
-the finite element method and CUDA.
+the finite element method and CUDA. Also has CPU-only version without CUDA
+dependency.
 
-Also has CPU-only version without CUDA dependency.
+Features 3rd order elements (cubic shape functions).
 
 ![beam.png](beam.png)
 *Image: von Mises stress of 2D beam fixed on left and pulled down by gravity*
