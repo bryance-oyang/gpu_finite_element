@@ -802,18 +802,22 @@ static double canon_triangle3_integral_grad(double *A, double *D)
 
 static void canon_triangle3_acoeff()
 {
-	int dim = 6;
-	double M[36] = {
-	/*	r^2	rs	s^2	r	s	1 */
-		0,	0,	0,	0,	0,	1,	/* vertex 0 */
-		1,	0,	0,	1,	0,	1,	/* vertex 1 */
-		0,	0,	1,	0,	1,	1,	/* vertex 2 */
-		0.25,	0.25,	0.25,	0.5,	0.5,	1,	/* vertex 3 */
-		0,	0,	0.25,	0,	0.5,	1,	/* vertex 4 */
-		0.25,	0,	0,	0.5,	0,	1	/* vertex 5 */
+	int dim = 10;
+	double M[100] = {
+	/*	r^3	r^2 s	r s^2	s^3	r^2	rs	s^2	r	s	1 */
+		0,	0,	0,	0,	0,	0,	0,	0,	0,	1,	/* vertex 0 */
+		1,	0,	0,	0,	1,	0,	0,	1,	0,	1,	/* vertex 1 */
+		0,	0,	0,	1,	0,	0,	1,	0,	1,	1,	/* vertex 2 */
+		1.0/27,	0,	0,	0,	1.0/9,	0,	0,	1.0/3,	0,	1,	/* vertex 3 */
+		8.0/27,	0,	0,	0,	4.0/9,	0,	0,	2.0/3,	0,	1,	/* vertex 4 */
+		8.0/27,	4.0/27,	2.0/27,	1.0/27,	4.0/9,	2.0/9,	1.0/9,	2.0/3,	1.0/3,	1,	/* vertex 5 */
+		1.0/27,	2.0/27,	4.0/27,	8.0/27,	1.0/9,	2.0/9,	4.0/9,	1.0/3,	2.0/3,	1,	/* vertex 6 */
+		0,	0,	0,	8.0/27,	0,	0,	4.0/9,	0,	2.0/3,	1,	/* vertex 7 */
+		0,	0,	0,	1.0/27,	0,	0,	1.0/9,	0,	1.0/3,	1,	/* vertex 8 */
+		1.0/27,	1.0/27,	1.0/27,	1.0/27,	1.0/9,	1.0/9,	1.0/9,	1.0/3,	1.0/3,	1,	/* vertex 9 */
 	};
 
-	double inv_M[36];
+	double inv_M[100];
 	inverse_matrix(M, dim, inv_M);
 	for (int i = 0; i < dim; i++) {
 	for (int j = 0; j < dim; j++) {
@@ -872,8 +876,8 @@ static void canon_triangle3_compute_all()
 	canon_triangle3.is_computed = 1;
 }
 
-/** midpoints for edges */
-static void triangle3_add_edge_midpoints(struct triangle3 *restrict triangle3, int v0, int v1, int v2)
+/** points for edges */
+static void triangle3_add_edge_points(struct triangle3 *restrict triangle3, int v0, int v1, int v2)
 {
 	int vidx[3] = {v0, v1, v2};
 	int midvidx[3] = {5, 3, 4}; // indices of midpoint in order of v0v1, v1v2, v2v0
@@ -948,7 +952,7 @@ struct triangle3 *mesh_add_triangle3(struct mesh *restrict mesh, int v0,
 	element->edges[1] = add_get_edge(mesh, v1, v2);
 	element->edges[2] = add_get_edge(mesh, v2, v0);
 
-	triangle3_add_edge_midpoints(triangle3, v0, v1, v2);
+	triangle3_add_edge_points(triangle3, v0, v1, v2);
 	triangle3_compute_geometry(triangle3);
 
 	return triangle3;
@@ -1041,10 +1045,12 @@ double triangle3_scalar_stress(struct vec *restrict c, struct element *restrict 
 	for (int j = 0; j < 2; j++) {
 	for (int dr = 0; dr < TRIANGLE3_NDERIV; dr++) {
 	for (int d = 0; d < TRIANGLE3_NDCOEFF; d++) {
+		/*
 		s[i][j] += triangle3->inv_J[2*dr + i]
 			* canon_triangle3.Da[v][dr][d]
 			* r[d]
 			* c->x[2*id + j];
+			*/
 	}}}}}
 
 	/* symmetrize */
