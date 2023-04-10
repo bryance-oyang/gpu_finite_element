@@ -900,7 +900,7 @@ static void canon_triangle3_compute_all()
 
 	canon_triangle3.I0[10] = 1.0/30; /* r^4 */
 	canon_triangle3.I0[11] = 1.0/120; /* r^3 s */
-	canon_triangle3.I0[12] = 7.0/180; /* r^2 s^2 */
+	canon_triangle3.I0[12] = 1.0/180; /* r^2 s^2 */
 	canon_triangle3.I0[13] = 1.0/120; /* r s^3 */
 	canon_triangle3.I0[14] = 1.0/30; /* s^4 */
 
