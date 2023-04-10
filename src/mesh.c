@@ -794,25 +794,25 @@ double triangle2_scalar_stress(struct vec *restrict c, struct element *restrict 
 static double canon_triangle3_integral_grad(double *A, double *B)
 {
 	return
-	canon_triangle3.I0[0] * (A[0]*B[0]) +
-	canon_triangle3.I0[0] * (A[0]*B[1] + A[1]*B[0]) +
-	canon_triangle3.I0[0] * (A[0]*B[2] + A[1]*B[1] + A[2]*B[0]) +
-	canon_triangle3.I0[0] * (A[1]*B[2] + A[2]*B[1]) +
-	canon_triangle3.I0[0] * (A[2]*B[2]) +
+	canon_triangle3.I0[10] * (A[0]*B[0]) +
+	canon_triangle3.I0[11] * (A[0]*B[1] + A[1]*B[0]) +
+	canon_triangle3.I0[12] * (A[0]*B[2] + A[1]*B[1] + A[2]*B[0]) +
+	canon_triangle3.I0[13] * (A[1]*B[2] + A[2]*B[1]) +
+	canon_triangle3.I0[14] * (A[2]*B[2]) +
 
 	canon_triangle3.I0[0] * (A[0]*B[3] + A[3]*B[0]) +
-	canon_triangle3.I0[0] * (A[0]*B[4] + A[4]*B[0] + A[1]*B[3] + A[3]*B[1]) +
-	canon_triangle3.I0[0] * (A[3]*B[2] + A[2]*B[3] + A[1]*B[4] + A[4]*B[1]) +
-	canon_triangle3.I0[0] * (A[2]*B[4] + A[4]*B[2]) +
+	canon_triangle3.I0[1] * (A[0]*B[4] + A[4]*B[0] + A[1]*B[3] + A[3]*B[1]) +
+	canon_triangle3.I0[2] * (A[3]*B[2] + A[2]*B[3] + A[1]*B[4] + A[4]*B[1]) +
+	canon_triangle3.I0[3] * (A[2]*B[4] + A[4]*B[2]) +
 
-	canon_triangle3.I0[0] * (A[3]*B[3] + A[0]*B[5] + A[5]*B[0]) +
-	canon_triangle3.I0[0] * (A[1]*B[5] + A[5]*B[1] + A[3]*B[4] + A[4]*B[3]) +
-	canon_triangle3.I0[0] * (A[4]*B[4] + A[2]*B[5] + A[5]*B[2]) +
+	canon_triangle3.I0[4] * (A[3]*B[3] + A[0]*B[5] + A[5]*B[0]) +
+	canon_triangle3.I0[5] * (A[1]*B[5] + A[5]*B[1] + A[3]*B[4] + A[4]*B[3]) +
+	canon_triangle3.I0[6] * (A[4]*B[4] + A[2]*B[5] + A[5]*B[2]) +
 
-	canon_triangle3.I0[0] * (A[3]*B[5] + A[5]*B[3]) +
-	canon_triangle3.I0[0] * (A[4]*B[5] + A[5]*B[4]) +
+	canon_triangle3.I0[7] * (A[3]*B[5] + A[5]*B[3]) +
+	canon_triangle3.I0[8] * (A[4]*B[5] + A[5]*B[4]) +
 
-	canon_triangle3.I0[0] * (A[5]*B[5]);
+	canon_triangle3.I0[9] * (A[5]*B[5]);
 }
 
 static void canon_triangle3_acoeff()
