@@ -119,7 +119,6 @@ struct triangle2 {
  *    |    .
  *   0|-----1
  *      3 4
- *
  */
 struct triangle3 {
 	struct element element;
@@ -148,5 +147,11 @@ struct triangle2 *mesh_add_triangle2(struct mesh *restrict mesh, int v0,
 void triangle2_stiffness_add(struct sparse *restrict A, struct element *restrict element);
 void triangle2_forces_add(struct vec *restrict b, struct element *restrict element);
 double triangle2_scalar_stress(struct vec *restrict c, struct element *restrict element, double *x);
+
+struct triangle3 *mesh_add_triangle3(struct mesh *restrict mesh, int v0,
+	int v1, int v2, double density, double elasticity);
+void triangle3_stiffness_add(struct sparse *restrict A, struct element *restrict element);
+void triangle3_forces_add(struct vec *restrict b, struct element *restrict element);
+double triangle3_scalar_stress(struct vec *restrict c, struct element *restrict element, double *x);
 
 #endif /* MESH_H */

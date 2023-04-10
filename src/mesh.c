@@ -30,14 +30,14 @@ static struct element_vtable triangle_vtable = {
 
 /**
  * each degree of freedom is a0 r^2 + a1 r s + a2 s^2 + a3 r + a4 s + a5
- * index ordering: vertex, xy, vecind, partial, coeff#
+ * index ordering: vertex, vecind, partial, coeff#
  */
 
 #define TRIANGLE2_NVERTEX 6
-#define TRIANGLE2_NXY 2
 #define TRIANGLE2_NDERIV 2
 #define TRIANGLE2_NCOEFF 6
 #define TRIANGLE2_NDCOEFF 3
+#define TRIANGLE2_NXY 2
 
 /**
  *    2
@@ -54,7 +54,7 @@ static struct element_vtable triangle_vtable = {
  */
 static struct canon_triangle2 {
 	int is_computed;
-	/* r^2 + rs + s^2 + r + s + 1 */
+	/* a_0 r^2 + a_1 rs + a_2 s^2 + a_3 r + a_4 s + a_5 */
 	double a[TRIANGLE2_NVERTEX][TRIANGLE2_NCOEFF];
 	/* A_0 r + A_1 s + A_2 */
 	double Da[TRIANGLE2_NVERTEX][TRIANGLE2_NDERIV][TRIANGLE2_NDCOEFF];
@@ -70,6 +70,50 @@ static struct element_vtable triangle2_vtable = {
 	.stiffness_add = triangle2_stiffness_add,
 	.forces_add = triangle2_forces_add,
 	.scalar_stress = triangle2_scalar_stress,
+};
+
+/**
+ * each degree of freedom is a0 r^3 + a1 r^2 s + a2 r s^2 + a3 s^3 + a4 r^2 + a5 r s + a6 s^2 + a7 r + a8 s + a9
+ * index ordering: vertex, vecind, partial, coeff#
+ */
+
+#define TRIANGLE3_NVERTEX 6
+#define TRIANGLE3_NDERIV 2
+#define TRIANGLE3_NCOEFF 10
+#define TRIANGLE3_NDCOEFF 6
+#define TRIANGLE3_NXY 2
+
+/**
+ *    2
+ *    |.
+ *   7| .6
+ *    |  .
+ *   8| 9 .5
+ *    |    .
+ *   0|-----1
+ *      3 4
+ *
+ * f_v = function 1 on vertex v and 0 on others
+ * f_v = a0 r^3 + a1 r^2 s + a2 r s^2 + a3 s^3 + a4 r^2 + a5 r s + a6 s^2 + a7 r + a8 s + a9
+ */
+static struct canon_triangle3 {
+	int is_computed;
+	/* a0 r^3 + a1 r^2 s + a2 r s^2 + a3 s^3 + a4 r^2 + a5 r s + a6 s^2 + a7 r + a8 s + a9 */
+	double a[TRIANGLE3_NVERTEX][TRIANGLE3_NCOEFF];
+	/* A_0 r^2 + A_1 rs + A_2 s^2 + A_3 r + A_4 s + A_5 */
+	double Da[TRIANGLE3_NVERTEX][TRIANGLE3_NDERIV][TRIANGLE3_NDCOEFF];
+	/* integrals of r^2, rs, s^2, r, s, 1 */
+	double I0[TRIANGLE3_NCOEFF];
+	/* integral of D_dr0 f_v0 D_dr1 f_v1 */
+	double I1[TRIANGLE3_NVERTEX][TRIANGLE3_NVERTEX][TRIANGLE3_NDERIV][TRIANGLE3_NDERIV];
+	/* integral of f_v  */
+	double I2[TRIANGLE3_NVERTEX];
+} canon_triangle3;
+
+static struct element_vtable triangle3_vtable = {
+	.stiffness_add = triangle3_stiffness_add,
+	.forces_add = triangle3_forces_add,
+	.scalar_stress = triangle3_scalar_stress,
 };
 
 /* helper function for computing stresses in triangle by mapping xy to rs coords */
