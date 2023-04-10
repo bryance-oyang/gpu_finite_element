@@ -77,7 +77,7 @@ static struct element_vtable triangle2_vtable = {
  * index ordering: vertex, vecind, partial, coeff#
  */
 
-#define TRIANGLE3_NVERTEX 6
+#define TRIANGLE3_NVERTEX 10
 #define TRIANGLE3_NDERIV 2
 #define TRIANGLE3_NCOEFF 10
 #define TRIANGLE3_NDCOEFF 6
@@ -928,7 +928,7 @@ static void triangle3_add_edge_points(struct triangle3 *restrict triangle3, int 
 			/* v0 + (v1 - v0) / 3 */
 			vec2_sub(&vert1->pos, &vert0->pos, &v01);
 			vec2_scale(1.0/3, &v01);
-			vec2_add(&vert0, &v01, &midp);
+			vec2_add(&vert0->pos, &v01, &midp);
 			bool enabled = vert0->enabled || vert1->enabled;
 			if ((midv = mesh_add_vertex(mesh, midp.x[0], midp.x[1], enabled)) < 0) {
 				raise(SIGSEGV);
