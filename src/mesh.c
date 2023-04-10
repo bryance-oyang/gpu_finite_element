@@ -948,8 +948,25 @@ static void triangle3_add_edge_points(struct triangle3 *restrict triangle3, int 
 			element->edges[i]->vertices[3] = midv;
 			element->vertices[2*i + 4] = midv;
 		} else {
-			element->vertices[2*i + 3] = element->edges[i]->vertices[2];
-			element->vertices[2*i + 4] = element->edges[i]->vertices[3];
+			/* the ordering of the vertices matters: e.g. the 2*i + 3 one should be closer to v0 */
+			/* v0 --- 3 --- 4 --- v1 and NOT other way */
+			struct vertex *vert0 = &mesh->vertices[vidx[(i+0)%3]];
+			int ev2 = element->edges[i]->vertices[2];
+			int ev3 = element->edges[i]->vertices[3];
+			struct vertex *evert2 = &mesh->vertices[ev2];
+			struct vertex *evert3 = &mesh->vertices[ev3];
+			struct vec2 v0_ev2, v0_ev3;
+			vec2_sub(&evert2->pos, &vert0->pos, &v0_ev2);
+			vec2_sub(&evert3->pos, &vert0->pos, &v0_ev3);
+
+			/* determine closeness */
+			if (vec2_dot(&v0_ev2, &v0_ev2) < vec2_dot(&v0_ev3, &v0_ev3)) {
+				element->vertices[2*i + 3] = ev2;
+				element->vertices[2*i + 4] = ev3;
+			} else {
+				element->vertices[2*i + 3] = ev3;
+				element->vertices[2*i + 4] = ev2;
+			}
 		}
 	}
 
