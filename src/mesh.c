@@ -787,3 +787,280 @@ double triangle2_scalar_stress(struct vec *restrict c, struct element *restrict 
 
 	return sqrt(1.5 * (SQR(s[0][0]) + 2*SQR(s[0][1]) + SQR(s[1][1])));
 }
+
+/**
+ * integrates
+ */
+static double canon_triangle3_integral_grad(double *A, double *D)
+{
+	return
+	canon_triangle3.I0[0] * (A[0]*D[0] + A[1]*D[1]) +
+	canon_triangle3.I0[5] * (A[2]*D[2]) +
+	canon_triangle3.I0[1] * (A[0]*D[1] + A[1]*D[0]) +
+	canon_triangle3.I0[3] * ((A[0] + A[1])*D[2] + (D[0] + D[1])*A[2]);
+}
+
+static void canon_triangle3_acoeff()
+{
+	int dim = 6;
+	double M[36] = {
+	/*	r^2	rs	s^2	r	s	1 */
+		0,	0,	0,	0,	0,	1,	/* vertex 0 */
+		1,	0,	0,	1,	0,	1,	/* vertex 1 */
+		0,	0,	1,	0,	1,	1,	/* vertex 2 */
+		0.25,	0.25,	0.25,	0.5,	0.5,	1,	/* vertex 3 */
+		0,	0,	0.25,	0,	0.5,	1,	/* vertex 4 */
+		0.25,	0,	0,	0.5,	0,	1	/* vertex 5 */
+	};
+
+	double inv_M[36];
+	inverse_matrix(M, dim, inv_M);
+	for (int i = 0; i < dim; i++) {
+	for (int j = 0; j < dim; j++) {
+		canon_triangle3.a[j][i] = inv_M[i*dim + j];
+	}}
+}
+
+static void canon_triangle3_Dacoeff()
+{
+	for (int v = 0; v < TRIANGLE3_NVERTEX; v++) {
+		canon_triangle3.Da[v][0][0] = 2 * canon_triangle3.a[v][0];
+		canon_triangle3.Da[v][0][1] = canon_triangle3.a[v][1];
+		canon_triangle3.Da[v][0][2] = canon_triangle3.a[v][3];
+
+		canon_triangle3.Da[v][1][0] = canon_triangle3.a[v][1];
+		canon_triangle3.Da[v][1][1] = 2 * canon_triangle3.a[v][2];
+		canon_triangle3.Da[v][1][2] = canon_triangle3.a[v][4];
+	}
+}
+
+static void canon_triangle3_I1()
+{
+	for (int v0 = 0; v0 < TRIANGLE3_NVERTEX; v0++) {
+	for (int v1 = 0; v1 < TRIANGLE3_NVERTEX; v1++) {
+	for (int dr0 = 0; dr0 < TRIANGLE3_NDERIV; dr0++) {
+	for (int dr1 = 0; dr1 < TRIANGLE3_NDERIV; dr1++) {
+		canon_triangle3.I1[v0][v1][dr0][dr1] = canon_triangle3_integral_grad(
+			canon_triangle3.Da[v0][dr0],
+			canon_triangle3.Da[v1][dr1]
+		);
+	}}}}
+}
+
+static void canon_triangle3_I2()
+{
+	for (int v = 0; v < TRIANGLE3_NVERTEX; v++) {
+	for (int c = 0; c < TRIANGLE3_NCOEFF; c++) {
+		canon_triangle3.I2[v] += canon_triangle3.a[v][c] * canon_triangle3.I0[c];
+	}}
+}
+
+static void canon_triangle3_compute_all()
+{
+	canon_triangle3.I0[0] = 1.0/12.0; /* r^2 */
+	canon_triangle3.I0[1] = 1.0/24.0; /* rs */
+	canon_triangle3.I0[2] = 1.0/12.0; /* s^2 */
+	canon_triangle3.I0[3] = 1.0/6.0; /* r */
+	canon_triangle3.I0[4] = 1.0/6.0; /* s */
+	canon_triangle3.I0[5] = 0.5; /* 1 */
+
+	canon_triangle3_acoeff();
+	canon_triangle3_Dacoeff();
+	canon_triangle3_I1();
+	canon_triangle3_I2();
+
+	canon_triangle3.is_computed = 1;
+}
+
+/** midpoints for edges */
+static void triangle3_add_edge_midpoints(struct triangle3 *restrict triangle3, int v0, int v1, int v2)
+{
+	int vidx[3] = {v0, v1, v2};
+	int midvidx[3] = {5, 3, 4}; // indices of midpoint in order of v0v1, v1v2, v2v0
+	struct vec2 midpoint;
+	int midv;
+
+	struct element *restrict element = &triangle3->element;
+	struct mesh *restrict mesh = element->mesh;
+
+	for (int i = 0; i < 3; i++) {
+		/* is_boundary true means edge is not shared yet, hence midpoint vertex not created yet */
+		if (element->edges[i]->is_boundary) {
+			/* midpoint of v0, v1, cyclical */
+			struct vertex *v0 = &mesh->vertices[vidx[(i+0)%3]];
+			struct vertex *v1 = &mesh->vertices[vidx[(i+1)%3]];
+			vec2_midpoint(&v0->pos, &v1->pos, &midpoint);
+
+			bool enabled = v0->enabled || v1->enabled;
+			if ((midv = mesh_add_vertex(mesh, midpoint.x[0], midpoint.x[1], enabled)) < 0) {
+				raise(SIGSEGV);
+			}
+
+			element->edges[i]->vertices[2] = midv;
+			element->vertices[midvidx[i]] = midv;
+		} else {
+			element->vertices[midvidx[i]] = element->edges[i]->vertices[2];
+		}
+	}
+}
+
+static void triangle3_compute_geometry(struct triangle3 *restrict triangle3)
+{
+	double J[4];
+	struct vec2 v01, v02;
+	struct vec2 *v0 = &get_vert(&triangle3->element, 0)->pos;
+	struct vec2 *v1 = &get_vert(&triangle3->element, 1)->pos;
+	struct vec2 *v2 = &get_vert(&triangle3->element, 2)->pos;
+
+	vec2_sub(v1, v0, &v01);
+	vec2_sub(v2, v0, &v02);
+	for (int i = 0; i < 2; i++) {
+		J[2*i + 0] = v01.x[i];
+		J[2*i + 1] = v02.x[i];
+	}
+
+	triangle3->jacob = fabs(matrix_det2(J));
+	inverse_matrix2(J, triangle3->inv_J);
+}
+
+struct triangle3 *mesh_add_triangle3(struct mesh *restrict mesh, int v0,
+	int v1, int v2, double density, double elasticity)
+{
+	struct triangle3 *triangle3 = malloc(sizeof(*triangle3));
+	if (triangle3 == NULL || mesh_add_element(mesh, &triangle3->element) != 0) {
+		return NULL;
+	}
+	struct element *element = &triangle3->element;
+
+	element->vtable = &triangle3_vtable;
+	element->mesh = mesh;
+
+	element->nvertices = 10; /* includes midpoints of edges */
+	element->vertices[0] = v0;
+	element->vertices[1] = v1;
+	element->vertices[2] = v2;
+
+	element->density = density;
+	element->elasticity = elasticity;
+
+	element->nedges = 3;
+	element->edges[0] = add_get_edge(mesh, v0, v1);
+	element->edges[1] = add_get_edge(mesh, v1, v2);
+	element->edges[2] = add_get_edge(mesh, v2, v0);
+
+	triangle3_add_edge_midpoints(triangle3, v0, v1, v2);
+	triangle3_compute_geometry(triangle3);
+
+	return triangle3;
+}
+
+void triangle3_stiffness_add(struct sparse *restrict A, struct element *restrict element)
+{
+	if (!canon_triangle3.is_computed) {
+		canon_triangle3_compute_all();
+	}
+
+	struct triangle3 *triangle3 = container_of(element, struct triangle3, element);
+
+	for (int v0 = 0; v0 < TRIANGLE2_NVERTEX; v0++) {
+	for (int v1 = 0; v1 < TRIANGLE2_NVERTEX; v1++) {
+		struct vertex *vert0 = get_vert(element, v0);
+		if (!vert0->enabled) {
+			continue;
+		}
+		int id0 = vert0->id;
+
+		struct vertex *vert1 = get_vert(element, v1);
+		if (!vert1->enabled) {
+			continue;
+		}
+		int id1 = vert1->id;
+
+		for (int xy0 = 0; xy0 < TRIANGLE2_NXY; xy0++) {
+		for (int xy1 = 0; xy1 < TRIANGLE2_NXY; xy1++) {
+			double entry = 0;
+
+			for (int dr0 = 0; dr0 < TRIANGLE2_NDERIV; dr0++) {
+			for (int dr1 = 0; dr1 < TRIANGLE2_NDERIV; dr1++) {
+				/* D_i u_j D^i u^j */
+				if (xy0 == xy1) {
+					for (int i = 0; i < 2; i++) {
+						entry += canon_triangle2.I1[v0][v1][dr0][dr1]
+							* triangle3->inv_J[2*dr0 + i] * triangle3->inv_J[2*dr1 + i];
+					}
+				}
+
+				/* D_i u^j D_j u^i */
+				entry += canon_triangle2.I1[v0][v1][dr0][dr1]
+					* triangle3->inv_J[2*dr0 + xy1] * triangle3->inv_J[2*dr1 + xy0];
+			}}
+
+			entry *= triangle3->jacob * element->elasticity / 2;
+			sparse_add(A, 2*id0 + xy0, 2*id1 + xy1, entry);
+		}}
+	}}
+}
+
+void triangle3_forces_add(struct vec *restrict b, struct element *restrict element)
+{
+	struct triangle3 *triangle3 = container_of(element, struct triangle3, element);
+
+	double factor = triangle3->jacob * element->density;
+
+	for (int v = 0; v < TRIANGLE2_NVERTEX; v++) {
+		struct vertex *vert = get_vert(element, v);
+		if (!vert->enabled) {
+			continue;
+		}
+		int id = vert->id;
+
+		b->x[2*id + 1] -= factor * canon_triangle3.I2[v];
+	}
+}
+
+double triangle3_scalar_stress(struct vec *restrict c, struct element *restrict element, double *x)
+{
+	/* canonical coordinates and additional 1 for easier index contraction */
+	double r[3] = {0, 0, 1};
+	canon_triangle_coord(c, element, x, r);
+	if (!(r[0] >= 0 && r[1] >= 0 && r[0] + r[1] <= 1)) {
+		return NAN;
+	}
+
+	struct triangle3 *restrict triangle3 = container_of(element, struct triangle3, element);
+
+	double s[2][2] = {{0, 0}, {0, 0}};
+	for (int v = 0; v < TRIANGLE3_NVERTEX; v++) {
+	struct vertex *vert = get_vert(element, v);
+	if (!vert->enabled) {
+		continue;
+	}
+	int id = vert->id;
+
+	for (int i = 0; i < 2; i++) {
+	for (int j = 0; j < 2; j++) {
+	for (int dr = 0; dr < TRIANGLE3_NDERIV; dr++) {
+	for (int d = 0; d < TRIANGLE3_NDCOEFF; d++) {
+		s[i][j] += triangle3->inv_J[2*dr + i]
+			* canon_triangle2.Da[v][dr][d]
+			* r[d]
+			* c->x[2*id + j];
+	}}}}}
+
+	/* symmetrize */
+	s[0][0] *= 2;
+	s[1][1] *= 2;
+	s[0][1] += s[1][0];
+	s[1][0] = s[0][1];
+
+	for (int i = 0; i < 2; i++) {
+	for (int j = 0; j < 2; j++) {
+		s[i][j] *= 0.5 * element->elasticity;
+	}}
+
+	double pressure = -0.5 * (s[0][0] + s[1][1]);
+	s[0][0] += pressure;
+	s[1][1] += pressure;
+
+	return sqrt(1.5 * (SQR(s[0][0]) + 2*SQR(s[0][1]) + SQR(s[1][1])));
+}
