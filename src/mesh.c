@@ -82,6 +82,7 @@ static struct element_vtable triangle2_vtable = {
 #define TRIANGLE3_NCOEFF 10
 #define TRIANGLE3_NDCOEFF 6
 #define TRIANGLE3_NXY 2
+#define TRIANGLE3_NINTEGRAL 15
 
 /**
  *    2
@@ -102,8 +103,8 @@ static struct canon_triangle3 {
 	double a[TRIANGLE3_NVERTEX][TRIANGLE3_NCOEFF];
 	/* A_0 r^2 + A_1 rs + A_2 s^2 + A_3 r + A_4 s + A_5 */
 	double Da[TRIANGLE3_NVERTEX][TRIANGLE3_NDERIV][TRIANGLE3_NDCOEFF];
-	/* integrals of r^2, rs, s^2, r, s, 1 */
-	double I0[TRIANGLE3_NCOEFF];
+	/* integrals of r^3, r^2 s, ... and r^4, r^3 s, ... */
+	double I0[TRIANGLE3_NINTEGRAL];
 	/* integral of D_dr0 f_v0 D_dr1 f_v1 */
 	double I1[TRIANGLE3_NVERTEX][TRIANGLE3_NVERTEX][TRIANGLE3_NDERIV][TRIANGLE3_NDERIV];
 	/* integral of f_v  */
@@ -851,12 +852,12 @@ static void canon_triangle3_Dacoeff()
 		canon_triangle3.Da[v][0][4] = canon_triangle3.a[v][5];
 		canon_triangle3.Da[v][0][5] = canon_triangle3.a[v][7];
 
-		canon_triangle3.Da[v][0][0] = canon_triangle3.a[v][1];
-		canon_triangle3.Da[v][0][1] = 2*canon_triangle3.a[v][2];
-		canon_triangle3.Da[v][0][2] = 3*canon_triangle3.a[v][3];
-		canon_triangle3.Da[v][0][3] = canon_triangle3.a[v][5];
-		canon_triangle3.Da[v][0][4] = 2*canon_triangle3.a[v][6];
-		canon_triangle3.Da[v][0][5] = canon_triangle3.a[v][8];
+		canon_triangle3.Da[v][1][0] = canon_triangle3.a[v][1];
+		canon_triangle3.Da[v][1][1] = 2*canon_triangle3.a[v][2];
+		canon_triangle3.Da[v][1][2] = 3*canon_triangle3.a[v][3];
+		canon_triangle3.Da[v][1][3] = canon_triangle3.a[v][5];
+		canon_triangle3.Da[v][1][4] = 2*canon_triangle3.a[v][6];
+		canon_triangle3.Da[v][1][5] = canon_triangle3.a[v][8];
 	}
 }
 
@@ -883,15 +884,18 @@ static void canon_triangle3_I2()
 
 static void canon_triangle3_compute_all()
 {
-	canon_triangle3.I0[0] = 1.0/12.0; /* r^3 */
-	canon_triangle3.I0[1] = 1.0/12.0; /* r^2 s */
-	canon_triangle3.I0[2] = 1.0/12.0; /* r s^2 */
-	canon_triangle3.I0[3] = 1.0/12.0; /* s^3 */
+	canon_triangle3.I0[0] = 1.0/20.0; /* r^3 */
+	canon_triangle3.I0[1] = 1.0/24.0; /* r^2 s */
+	canon_triangle3.I0[2] = 1.0/24.0; /* r s^2 */
+	canon_triangle3.I0[3] = 1.0/20.0; /* s^3 */
+
 	canon_triangle3.I0[4] = 1.0/12.0; /* r^2 */
 	canon_triangle3.I0[5] = 1.0/24.0; /* r s */
 	canon_triangle3.I0[6] = 1.0/12.0; /* s^2 */
+
 	canon_triangle3.I0[7] = 1.0/6.0; /* r */
 	canon_triangle3.I0[8] = 1.0/6.0; /* s */
+
 	canon_triangle3.I0[9] = 0.5; /* 1 */
 
 	canon_triangle3.I0[10] = 1.0/30; /* r^4 */
