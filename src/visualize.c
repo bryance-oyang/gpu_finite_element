@@ -120,6 +120,13 @@ static struct bounding_box triangle_bounding_box(struct vis *restrict vis, struc
 	return bb;
 }
 
+static void cathedral(double value, uint16_t *rgb)
+{
+	rgb[0] = 194*value;
+	rgb[1] = 36 + 219*value;
+	rgb[2] = 12 + 243*value;
+}
+
 int vis_init(struct vis *restrict vis, struct mesh *restrict mesh)
 {
 	vis->data_bytes = (3*IMAGE_HEIGHT*IMAGE_WIDTH + 6*mesh->nelements) * sizeof(*vis->data);
@@ -217,13 +224,8 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 					vis->data[(i*IMAGE_WIDTH + j)*3 + k] = 0;
 				}
 			} else {
-				for (int k = 0; k < 3; k++) {
-					vis->data[(i*IMAGE_WIDTH + j)*3 + k] = 0;
-				}
 				double value = lin_scale(stress, min_stress, max_stress, 0, 1);
-				vis->data[(i*IMAGE_WIDTH + j)*3 + 0] = 149*value;
-				vis->data[(i*IMAGE_WIDTH + j)*3 + 1] = 36 + 219*value;
-				vis->data[(i*IMAGE_WIDTH + j)*3 + 2] = 18 + 237*value;
+				cathedral(value, &vis->data[(i*IMAGE_WIDTH + j)*3]);
 			}
 		}
 	}
