@@ -867,12 +867,22 @@ static void canon_triangle3_I2()
 
 static void canon_triangle3_compute_all()
 {
-	canon_triangle3.I0[0] = 1.0/12.0; /* r^2 */
-	canon_triangle3.I0[1] = 1.0/24.0; /* rs */
-	canon_triangle3.I0[2] = 1.0/12.0; /* s^2 */
-	canon_triangle3.I0[3] = 1.0/6.0; /* r */
-	canon_triangle3.I0[4] = 1.0/6.0; /* s */
-	canon_triangle3.I0[5] = 0.5; /* 1 */
+	canon_triangle3.I0[0] = 1.0/12.0; /* r^3 */
+	canon_triangle3.I0[1] = 1.0/12.0; /* r^2 s */
+	canon_triangle3.I0[2] = 1.0/12.0; /* r s^2 */
+	canon_triangle3.I0[3] = 1.0/12.0; /* s^3 */
+	canon_triangle3.I0[4] = 1.0/12.0; /* r^2 */
+	canon_triangle3.I0[5] = 1.0/24.0; /* r s */
+	canon_triangle3.I0[6] = 1.0/12.0; /* s^2 */
+	canon_triangle3.I0[7] = 1.0/6.0; /* r */
+	canon_triangle3.I0[8] = 1.0/6.0; /* s */
+	canon_triangle3.I0[9] = 0.5; /* 1 */
+
+	canon_triangle3.I0[10] = 1.0/30; /* r^4 */
+	canon_triangle3.I0[11] = 1.0/120; /* r^3 s */
+	canon_triangle3.I0[12] = 7.0/180; /* r^2 s^2 */
+	canon_triangle3.I0[13] = 1.0/120; /* r s^3 */
+	canon_triangle3.I0[14] = 1.0/30; /* s^4 */
 
 	canon_triangle3_acoeff();
 	canon_triangle3_Dacoeff();
