@@ -79,8 +79,8 @@ static void canon_triangle_coord(struct vec *restrict c,
 	struct vec2 vxy = {.x = {xy[0], xy[1]}};
 	struct vec2 v[3];
 	struct vec2 v01, v02, xy0;
-	double J[2][2];
-	double inv_J[2][2];
+	double J[4];
+	double inv_J[4];
 
 	for (int i = 0; i < 3; i++) {
 		struct vertex *restrict vert = get_vert(element, i);
@@ -98,21 +98,16 @@ static void canon_triangle_coord(struct vec *restrict c,
 	vec2_sub(&vxy, &v[0], &xy0);
 
 	for (int i = 0; i < 2; i++) {
-		J[i][0] = v01.x[i];
-		J[i][1] = v02.x[i];
+		J[2*i + 0] = v01.x[i];
+		J[2*i + 1] = v02.x[i];
 	}
-
-	double inv_det_J = 1.0 / (J[0][0] * J[1][1] - J[0][1] * J[1][0]);
-	inv_J[0][0] = J[1][1] * inv_det_J;
-	inv_J[1][1] = J[0][0] * inv_det_J;
-	inv_J[0][1] = -J[0][1] * inv_det_J;
-	inv_J[1][0] = -J[1][0] * inv_det_J;
+	inverse_matrix2(J, inv_J);
 
 	rs[0] = 0;
 	rs[1] = 0;
 	for (int j = 0; j < 2; j++) {
-		rs[0] += inv_J[0][j] * xy0.x[j];
-		rs[1] += inv_J[1][j] * xy0.x[j];
+		rs[0] += inv_J[2*0 + j] * xy0.x[j];
+		rs[1] += inv_J[2*1 + j] * xy0.x[j];
 	}
 }
 
@@ -498,7 +493,7 @@ static void canon_triangle2_acoeff()
 	};
 
 	double inv_M[36];
-	get_inverse(M, dim, inv_M);
+	inverse_matrix(M, dim, inv_M);
 	for (int i = 0; i < dim; i++) {
 	for (int j = 0; j < dim; j++) {
 		canon_triangle2.a[j][i] = inv_M[i*dim + j];
@@ -590,7 +585,7 @@ static void triangle2_add_edge_midpoints(struct triangle2 *restrict triangle2, i
 
 static void triangle2_compute_geometry(struct triangle2 *restrict triangle2)
 {
-	double J[2][2];
+	double J[4];
 	struct vec2 v01, v02;
 	struct vec2 *v0 = &get_vert(&triangle2->element, 0)->pos;
 	struct vec2 *v1 = &get_vert(&triangle2->element, 1)->pos;
@@ -599,16 +594,12 @@ static void triangle2_compute_geometry(struct triangle2 *restrict triangle2)
 	vec2_sub(v1, v0, &v01);
 	vec2_sub(v2, v0, &v02);
 	for (int i = 0; i < 2; i++) {
-		J[i][0] = v01.x[i];
-		J[i][1] = v02.x[i];
+		J[2*i + 0] = v01.x[i];
+		J[2*i + 1] = v02.x[i];
 	}
 
-	double det_J = J[0][0] * J[1][1] - J[0][1] * J[1][0];
-	triangle2->inv_J[0][0] = J[1][1] / det_J;
-	triangle2->inv_J[0][1] = -J[0][1] / det_J;
-	triangle2->inv_J[1][0] = -J[1][0] / det_J;
-	triangle2->inv_J[1][1] = J[0][0] / det_J;
-	triangle2->jacob = fabs(det_J);
+	triangle2->jacob = fabs(matrix_det2(J));
+	inverse_matrix2(J, triangle2->inv_J);
 }
 
 struct triangle2 *mesh_add_triangle2(struct mesh *restrict mesh, int v0,
@@ -674,13 +665,13 @@ void triangle2_stiffness_add(struct sparse *restrict A, struct element *restrict
 				if (xy0 == xy1) {
 					for (int i = 0; i < 2; i++) {
 						entry += canon_triangle2.I1[v0][v1][dr0][dr1]
-							* triangle2->inv_J[dr0][i] * triangle2->inv_J[dr1][i];
+							* triangle2->inv_J[2*dr0 + i] * triangle2->inv_J[2*dr1 + i];
 					}
 				}
 
 				/* D_i u^j D_j u^i */
 				entry += canon_triangle2.I1[v0][v1][dr0][dr1]
-					* triangle2->inv_J[dr0][xy1] * triangle2->inv_J[dr1][xy0];
+					* triangle2->inv_J[2*dr0 + xy1] * triangle2->inv_J[2*dr1 + xy0];
 			}}
 
 			entry *= triangle2->jacob * element->elasticity / 2;
@@ -729,7 +720,7 @@ double triangle2_scalar_stress(struct vec *restrict c, struct element *restrict 
 	for (int j = 0; j < 2; j++) {
 	for (int dr = 0; dr < TRIANGLE2_NDERIV; dr++) {
 	for (int d = 0; d < TRIANGLE2_NDCOEFF; d++) {
-		s[i][j] += triangle2->inv_J[dr][i]
+		s[i][j] += triangle2->inv_J[2*dr + i]
 			* canon_triangle2.Da[v][dr][d]
 			* r[d]
 			* c->x[2*id + j];

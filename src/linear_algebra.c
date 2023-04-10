@@ -312,6 +312,8 @@ void vec2_midpoint(struct vec2 *a, struct vec2 *b, struct vec2 *out)
 	vec2_scale(0.5, out);
 }
 
+double matrix_det(double *restrict matrix, int dim);
+
 static double minor(double *restrict matrix, int dim, int i, int j)
 {
 	double *restrict sub = malloc((dim - 1) * (dim - 1) * sizeof(*sub));
@@ -333,12 +335,12 @@ static double minor(double *restrict matrix, int dim, int i, int j)
 		iii++;
 	}
 
-	double sub_det = det(sub, dim - 1);
+	double sub_det = matrix_det(sub, dim - 1);
 	free(sub);
 	return sub_det;
 }
 
-double det(double *restrict matrix, int dim)
+double matrix_det(double *restrict matrix, int dim)
 {
 	if (dim == 1) {
 		return *matrix;
@@ -353,9 +355,9 @@ double det(double *restrict matrix, int dim)
 	return result;
 }
 
-void get_inverse(double *restrict matrix, int dim, double *restrict inverse)
+void inverse_matrix(double *restrict matrix, int dim, double *restrict inverse)
 {
-	double inv_det = 1.0 / det(matrix, dim);
+	double inv_det = 1.0 / matrix_det(matrix, dim);
 
 	for (int i = 0; i < dim; i++) {
 		for (int j = 0; j < dim; j++) {
@@ -366,6 +368,21 @@ void get_inverse(double *restrict matrix, int dim, double *restrict inverse)
 			inverse[i*dim + j] = sgn * minor(matrix, dim, j, i) * inv_det;
 		}
 	}
+}
+
+double matrix_det2(double *restrict matrix)
+{
+	return matrix[0] * matrix[3] - matrix[1] * matrix[2];
+}
+
+/* invert 2x2 */
+void inverse_matrix2(double *restrict matrix, double *restrict inverse)
+{
+	double inv_det = 1.0 / matrix_det2(matrix);
+	inverse[0] = matrix[3] * inv_det;
+	inverse[3] = matrix[0] * inv_det;
+	inverse[1] = -matrix[1] * inv_det;
+	inverse[2] = -matrix[2] * inv_det;
 }
 
 int sparse_conj_grad(struct sparse *restrict A, struct vec *restrict b,

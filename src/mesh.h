@@ -106,8 +106,8 @@ struct triangle2 {
 	struct element element;
 
 	double jacob;
-	/* inv_J[i][j] = dr^i / dx^j */
-	double inv_J[2][2];
+	/* inv_J[2*i + j] = dr^i / dx^j */
+	double inv_J[4];
 };
 
 /**
@@ -125,8 +125,8 @@ struct triangle3 {
 	struct element element;
 
 	double jacob;
-	/* inv_J[i][j] = dr^i / dx^j */
-	double inv_J[2][2];
+	/* inv_J[2*i + j] = dr^i / dx^j */
+	double inv_J[4];
 };
 
 int mesh_init(struct mesh *restrict mesh);

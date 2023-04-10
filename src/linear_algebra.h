@@ -64,8 +64,9 @@ double vec2_dot(struct vec2 *a, struct vec2 *b);
 void vec2_normalize(struct vec2 *restrict v);
 void vec2_midpoint(struct vec2 *a, struct vec2 *b, struct vec2 *out);
 
-double det(double *restrict matrix, int dim);
-void get_inverse(double *restrict matrix, int dim, double *restrict inverse);
+void inverse_matrix(double *restrict matrix, int dim, double *restrict inverse);
+double matrix_det2(double *restrict matrix);
+void inverse_matrix2(double *restrict matrix, double *restrict inverse);
 
 int sparse_conj_grad(struct sparse *restrict A, struct vec *restrict b,
 	struct vec *restrict c, double tolerance, struct vis *restrict vis,
