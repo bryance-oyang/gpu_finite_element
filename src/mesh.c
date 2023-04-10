@@ -789,7 +789,8 @@ double triangle2_scalar_stress(struct vec *restrict c, struct element *restrict 
 }
 
 /**
- * integrates
+ * integrates (A_0 r^2 + A_1 rs + A_2 s^2 + A_3 r + A_4 s + A_5)
+ * * (B_0 r^2 + B_1 rs + B_2 s^2 + B_3 r + B_4 s + B_5)
  */
 static double canon_triangle3_integral_grad(double *A, double *B)
 {
@@ -911,8 +912,7 @@ static void canon_triangle3_compute_all()
 static void triangle3_add_edge_points(struct triangle3 *restrict triangle3, int v0, int v1, int v2)
 {
 	int vidx[3] = {v0, v1, v2};
-	int midvidx[3] = {5, 3, 4}; // indices of midpoint in order of v0v1, v1v2, v2v0
-	struct vec2 midpoint;
+	struct vec2 v01, midp;
 	int midv;
 
 	struct element *restrict element = &triangle3->element;
@@ -922,21 +922,45 @@ static void triangle3_add_edge_points(struct triangle3 *restrict triangle3, int 
 		/* is_boundary true means edge is not shared yet, hence midpoint vertex not created yet */
 		if (element->edges[i]->is_boundary) {
 			/* midpoint of v0, v1, cyclical */
-			struct vertex *v0 = &mesh->vertices[vidx[(i+0)%3]];
-			struct vertex *v1 = &mesh->vertices[vidx[(i+1)%3]];
-			vec2_midpoint(&v0->pos, &v1->pos, &midpoint);
+			struct vertex *vert0 = &mesh->vertices[vidx[(i+0)%3]];
+			struct vertex *vert1 = &mesh->vertices[vidx[(i+1)%3]];
 
-			bool enabled = v0->enabled || v1->enabled;
-			if ((midv = mesh_add_vertex(mesh, midpoint.x[0], midpoint.x[1], enabled)) < 0) {
+			/* v0 + (v1 - v0) / 3 */
+			vec2_sub(&vert1->pos, &vert0->pos, &v01);
+			vec2_scale(1.0/3, &v01);
+			vec2_add(&vert0, &v01, &midp);
+			bool enabled = vert0->enabled || vert1->enabled;
+			if ((midv = mesh_add_vertex(mesh, midp.x[0], midp.x[1], enabled)) < 0) {
 				raise(SIGSEGV);
 			}
-
 			element->edges[i]->vertices[2] = midv;
-			element->vertices[midvidx[i]] = midv;
+			element->vertices[2*i + 3] = midv;
+
+			/* v0 + 2*(v1 - v0) / 3 */
+			vec2_add(&midp, &v01, &midp);
+			if ((midv = mesh_add_vertex(mesh, midp.x[0], midp.x[1], enabled)) < 0) {
+				raise(SIGSEGV);
+			}
+			element->edges[i]->vertices[3] = midv;
+			element->vertices[2*i + 4] = midv;
 		} else {
-			element->vertices[midvidx[i]] = element->edges[i]->vertices[2];
+			element->vertices[2*i + 3] = element->edges[i]->vertices[2];
+			element->vertices[2*i + 4] = element->edges[i]->vertices[3];
 		}
 	}
+
+	/* (v0 + v1 + v2) / 3 */
+	struct vertex *vert0 = &mesh->vertices[v0];
+	struct vertex *vert1 = &mesh->vertices[v1];
+	struct vertex *vert2 = &mesh->vertices[v2];
+	vec2_add(&vert0->pos, &vert1->pos, &midp);
+	vec2_add(&vert2->pos, &midp, &midp);
+	vec2_scale(1.0/3, &midp);
+	bool enabled = vert0->enabled || vert1->enabled || vert2->enabled;
+	if ((midv = mesh_add_vertex(mesh, midp.x[0], midp.x[1], enabled)) < 0) {
+		raise(SIGSEGV);
+	}
+	element->vertices[9] = midv;
 }
 
 static void triangle3_compute_geometry(struct triangle3 *restrict triangle3)
