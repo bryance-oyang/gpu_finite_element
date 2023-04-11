@@ -11,28 +11,28 @@
  * @brief setup finite element problem
  */
 
-#include "finite_element.h"
+#include "solver.h"
 #include "cuda.h"
 
-int fep_init(struct finite_element_problem *restrict p, struct mesh *restrict mesh)
+int solver_init(struct solver *restrict solver, struct mesh *restrict mesh)
 {
-	if (sparse_init(&p->A) != 0) {
+	if (sparse_init(&solver->A) != 0) {
 		goto err_noA;
 	}
-	if (vec_init(&p->b, DIM * mesh->nenabled) != 0) {
+	if (vec_init(&solver->b, DIM * mesh->nenabled) != 0) {
 		goto err_nob;
 	}
-	if (vec_init(&p->c, DIM * mesh->nenabled) != 0) {
+	if (vec_init(&solver->c, DIM * mesh->nenabled) != 0) {
 		goto err_noc;
 	}
-	p->mesh = mesh;
+	solver->mesh = mesh;
 
 
 	mesh_assign_vertex_ids(mesh);
-	mesh_construct_problem(mesh, &p->A, &p->b);
+	mesh_construct_problem(mesh, &solver->A, &solver->b);
 
-	sparse_sort(&p->A);
-	sparse_consolidate(&p->A);
+	sparse_sort(&solver->A);
+	sparse_consolidate(&solver->A);
 
 #ifdef GPU_COMPUTE
 	if (cuda_init(p) != 0) {
@@ -48,31 +48,31 @@ err_nocuda:
 #endif /* GPU_COMPUTE */
 
 err_noc:
-	vec_destroy(&p->b);
+	vec_destroy(&solver->b);
 err_nob:
-	sparse_destroy(&p->A);
+	sparse_destroy(&solver->A);
 err_noA:
 	return -1;
 }
 
-void fep_destroy(struct finite_element_problem *restrict p)
+void solver_destroy(struct solver *restrict solver)
 {
 #ifdef GPU_COMPUTE
 	cuda_destroy(p);
 #endif
-	vec_destroy(&p->c);
-	vec_destroy(&p->b);
-	sparse_destroy(&p->A);
+	vec_destroy(&solver->c);
+	vec_destroy(&solver->b);
+	sparse_destroy(&solver->A);
 }
 
-int fep_solve(struct finite_element_problem *restrict p, double tolerance, struct vis *restrict vis)
+int solver_solve(struct solver *restrict solver, double tolerance, struct vis *restrict vis)
 {
 	int retval;
 
 #ifdef GPU_COMPUTE
 	retval = gpu_conj_gradient(p, tolerance);
 #else /* GPU_COMPUTE */
-	retval = sparse_conj_grad(&p->A, &p->b, &p->c, tolerance, vis, p->mesh);
+	retval = sparse_conj_grad(&solver->A, &solver->b, &solver->c, tolerance, vis, solver->mesh);
 #endif /* GPU_COMPUTE */
 
 	return retval;

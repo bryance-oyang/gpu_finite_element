@@ -15,10 +15,10 @@
 
 #ifdef GPU_COMPUTE
 
-int cuda_init(struct finite_element_problem *restrict p);
-void cuda_destroy(struct finite_element_problem *restrict p);
+int cuda_init(struct solver *restrict solver);
+void cuda_destroy(struct solver *restrict solver);
 
-int gpu_conj_gradient(struct finite_element_problem *restrict p, double tolerance);
+int gpu_conj_gradient(struct solver *restrict solver, double tolerance);
 
 #endif /* GPU_COMPUTE */
 

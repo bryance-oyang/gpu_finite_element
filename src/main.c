@@ -22,7 +22,7 @@
 
 #include "load_obj.h"
 #include "visualize.h"
-#include "finite_element.h"
+#include "solver.h"
 
 static struct timespec start, end;
 
@@ -72,12 +72,12 @@ int main()
 	struct vis vis;
 	vis_init(&vis, &mesh);
 
-	struct finite_element_problem problem;
+	struct solver problem;
 	printf("initing...\n");
 	fflush(stdout);
 	benchmark_start();
-	if (fep_init(&problem, &mesh) != 0) {
-		printf("error in fep_init!!!!!!!!!!!!!!\n");
+	if (solver_init(&problem, &mesh) != 0) {
+		printf("error in solver_init!!!!!!!!!!!!!!\n");
 		return -1;
 	}
 	benchmark_end("benchmarked build time: %g ms\n");
@@ -85,8 +85,8 @@ int main()
 	printf("solving...\n");
 	fflush(stdout);
 	benchmark_start();
-	if (fep_solve(&problem, 0.001, &vis) != 0) {
-		printf("error in fep_solve!!!!!!!!!!!!!!\n");
+	if (solver_solve(&problem, 0.001, &vis) != 0) {
+		printf("error in solver_solve!!!!!!!!!!!!!!\n");
 		return -1;
 	}
 	benchmark_end("benchmarked solve time: %g ms\n");
@@ -105,7 +105,7 @@ int main()
 	}
 	vis_destroy(&vis);
 
-	fep_destroy(&problem);
+	solver_destroy(&problem);
 	mesh_destroy(&mesh);
 	return 0;
 }

@@ -603,7 +603,7 @@ static void canon_triangle2_compute_all()
 static void triangle2_add_edge_midpoints(struct triangle2 *restrict triangle2, int v0, int v1, int v2)
 {
 	int vidx[3] = {v0, v1, v2};
-	int midvidx[3] = {5, 3, 4}; // indices of midpoint in order of v0v1, v1v2, v2v0
+	int midvidx[3] = {5, 3, 4}; /* indices of midpoint in order of v0v1, v1v2, v2v0 */
 	struct vec2 midpoint;
 	int midv;
 

@@ -10,8 +10,8 @@
  * @file
  */
 
-#ifndef FINITE_ELEMENT_H
-#define FINITE_ELEMENT_H
+#ifndef SOLVER_H
+#define SOLVER_H
 
 #include "mesh.h"
 
@@ -24,7 +24,7 @@ struct vis;
 #endif /* GPU_COMPUTE */
 
 /* Ac = b */
-struct finite_element_problem {
+struct solver {
 	struct mesh *mesh;
 	/** stiffness */
 	struct sparse A;
@@ -59,8 +59,8 @@ struct finite_element_problem {
 #endif /* GPU_COMPUTE */
 };
 
-int fep_init(struct finite_element_problem *restrict p, struct mesh *restrict mesh);
-void fep_destroy(struct finite_element_problem *restrict p);
-int fep_solve(struct finite_element_problem *restrict p, double tolerance, struct vis *restrict vis);
+int solver_init(struct solver *restrict p, struct mesh *restrict mesh);
+void solver_destroy(struct solver *restrict p);
+int solver_solve(struct solver *restrict p, double tolerance, struct vis *restrict vis);
 
-#endif /* FINITE_ELEMENT_H */
+#endif /* SOLVER_H */

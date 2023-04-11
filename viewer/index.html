@@ -51,6 +51,7 @@
         const DIM = 2;
         const ntriangles = ((data.byteLength / 2) - img_height*img_width*3) / 6;
 
+        // draw image
         for (let i = 0; i < img_height; i++) {
           for (let j = 0; j < img_width; j++) {
             for (let k = 0; k < 3; k++) {
@@ -62,6 +63,7 @@
         }
         ctx.putImageData(img_data, 0, 0);
 
+        // draw grid
         if (draw_grid_bool.checked) {
           for (let i = 0; i < ntriangles; i++) {
             let start_x = 0;
