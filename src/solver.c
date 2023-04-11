@@ -44,7 +44,7 @@ int solver_init(struct solver *restrict solver, struct mesh *restrict mesh)
 
 #ifdef GPU_COMPUTE
 err_nocuda:
-	vec_destroy(&p->c);
+	vec_destroy(&solver->c);
 #endif /* GPU_COMPUTE */
 
 err_noc:
