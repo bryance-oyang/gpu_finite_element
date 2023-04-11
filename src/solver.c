@@ -35,7 +35,7 @@ int solver_init(struct solver *restrict solver, struct mesh *restrict mesh)
 	sparse_consolidate(&solver->A);
 
 #ifdef GPU_COMPUTE
-	if (cuda_init(p) != 0) {
+	if (cuda_init(solver) != 0) {
 		goto err_nocuda;
 	}
 #endif /* GPU_COMPUTE */
@@ -58,7 +58,7 @@ err_noA:
 void solver_destroy(struct solver *restrict solver)
 {
 #ifdef GPU_COMPUTE
-	cuda_destroy(p);
+	cuda_destroy(solver);
 #endif
 	vec_destroy(&solver->c);
 	vec_destroy(&solver->b);
@@ -70,7 +70,7 @@ int solver_solve(struct solver *restrict solver, double tolerance, struct vis *r
 	int retval;
 
 #ifdef GPU_COMPUTE
-	retval = gpu_conj_gradient(p, tolerance);
+	retval = gpu_conj_gradient(solver, tolerance);
 #else /* GPU_COMPUTE */
 	retval = sparse_conj_grad(&solver->A, &solver->b, &solver->c, tolerance, vis, solver->mesh);
 #endif /* GPU_COMPUTE */
