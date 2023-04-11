@@ -25,32 +25,8 @@
 #include "solver.h"
 
 static struct timespec start, end;
-
-static void benchmark_start()
-{
-#ifdef CLOCK_MONOTONIC
-		if (clock_gettime(CLOCK_MONOTONIC, &start) != 0) {
-			clock_gettime(CLOCK_REALTIME, &start);
-		}
-#else
-		clock_gettime(CLOCK_REALTIME, &start);
-#endif /* CLOCK_MONOTONIC */
-}
-
-static void benchmark_end(const char *msg)
-{
-#ifdef CLOCK_MONOTONIC
-		if (clock_gettime(CLOCK_MONOTONIC, &end) != 0) {
-			clock_gettime(CLOCK_REALTIME, &end);
-		}
-#else
-		clock_gettime(CLOCK_REALTIME, &end);
-#endif /* CLOCK_MONOTONIC */
-
-	double msec = (end.tv_sec - start.tv_sec)*1e3 + (end.tv_nsec - start.tv_nsec)*1e-6;
-	printf(msg, msec);
-}
-
+static void benchmark_start();
+static void benchmark_end(const char *msg);
 
 int main()
 {
@@ -108,4 +84,29 @@ int main()
 	solver_destroy(&problem);
 	mesh_destroy(&mesh);
 	return 0;
+}
+
+static void benchmark_start()
+{
+#ifdef CLOCK_MONOTONIC
+		if (clock_gettime(CLOCK_MONOTONIC, &start) != 0) {
+			clock_gettime(CLOCK_REALTIME, &start);
+		}
+#else
+		clock_gettime(CLOCK_REALTIME, &start);
+#endif /* CLOCK_MONOTONIC */
+}
+
+static void benchmark_end(const char *msg)
+{
+#ifdef CLOCK_MONOTONIC
+		if (clock_gettime(CLOCK_MONOTONIC, &end) != 0) {
+			clock_gettime(CLOCK_REALTIME, &end);
+		}
+#else
+		clock_gettime(CLOCK_REALTIME, &end);
+#endif /* CLOCK_MONOTONIC */
+
+	double msec = (end.tv_sec - start.tv_sec)*1e3 + (end.tv_nsec - start.tv_nsec)*1e-6;
+	printf(msg, msec);
 }
