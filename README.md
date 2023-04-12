@@ -1,6 +1,6 @@
 # gpu_finite_element
-A rudimentary proof of concept: GPU accelerated structural stress analysis using
-the finite element method and CUDA. Also has CPU-only version without CUDA
+A rudimentary proof of concept: GPU accelerated structural stress solver using
+finite element analysis and CUDA. Also has CPU-only version without CUDA
 dependency.
 
 Has up to 3rd order 2D triangular elements (cubic shape functions).
