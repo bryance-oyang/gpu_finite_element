@@ -29,14 +29,14 @@ View at `http://localhost:8000/`.
 
 ## Brief notes
 If $\psi^j$ is a small displacement field with $j$ indexing the spatial
-directions, then the strain is
+directions, then the linearized strain is
 $$
-s^{ij} = \frac{1}{2}(\nabla^i \psi^j + \nabla^j \psi^i)
+\epsilon^{ij} = \frac{1}{2}(\nabla^i \psi^j + \nabla^j \psi^i)
 $$
 and for a simple scalar elasticity $E$ (ignoring Poisson's ratio), the stress
 is
 $$
-\sigma^{ij} = E s^{ij}
+\sigma^{ij} = E \epsilon^{ij}
 $$
 and Newton's second law $(F = ma)$ with density $\rho$ and external forces per
 volume $f^j$ is
@@ -45,8 +45,8 @@ $$
 $$
 
 To solve for the steady state ($\partial_t^2 \psi^j = 0$), discretize by
-choosing some basis functions $u(x)$ (representing the degrees of freedom of
-interest) and expanding
+choosing some basis functions $u(x)$ (shape functions representing the degrees
+of freedom of interest) and expanding
 $$
 \psi^j(x) = \sum_n c_n u_n^j(x)
 $$
