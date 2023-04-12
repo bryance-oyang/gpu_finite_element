@@ -61,7 +61,7 @@ int main()
 	printf("solving...\n");
 	fflush(stdout);
 	benchmark_start();
-	if (solver_solve(&problem, 0.001, &vis) != 0) {
+	if (solver_solve(&problem, 0.0001, &vis) != 0) {
 		printf("error in solver_solve!!!!!!!!!!!!!!\n");
 		return -1;
 	}

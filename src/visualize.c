@@ -131,7 +131,7 @@ static inline void rainbow(double value, uint16_t *rgb)
 {
 	double H = lin_scale(value, 0, 1, 248, 0);
 	double S = 1;
-	double L = 0.5;
+	double L = -0.28 * SQR(SQR(1 - value)) + 0.5;
 	double C = (1 - fabs(2*L - 1)) * S;
 	double m = L - C / 2;
 
