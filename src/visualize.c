@@ -127,6 +127,14 @@ static inline void cathedral(double value, uint16_t *rgb)
 	rgb[2] = 18 + 237*value;
 }
 
+static inline void cathedral_discrete(double value, uint16_t *rgb)
+{
+	value = ((int)(value * 16)) / 16.0;
+	rgb[0] = 194*value;
+	rgb[1] = 36 + 219*value;
+	rgb[2] = 18 + 237*value;
+}
+
 static inline void rainbow(double value, uint16_t *rgb)
 {
 	double H = lin_scale(value, 0, 1, 248, 0);
