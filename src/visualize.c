@@ -233,7 +233,6 @@ static int number_cmp(const void *a, const void *b)
 static void fill_stresses(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *restrict c)
 {
 	double xy[2];
-	vis->nsorted_stresses = 0;
 
 	for (int i = 0; i < IMAGE_HEIGHT * IMAGE_WIDTH; i++) {
 		vis->stresses[i] = NAN;
@@ -253,13 +252,14 @@ static void fill_stresses(struct vis *restrict vis, struct mesh *restrict mesh, 
 		}
 	}
 
+	vis->nsorted_stresses = 0;
 	for (int i = 0; i < IMAGE_HEIGHT * IMAGE_WIDTH; i++) {
 		double stress = vis->stresses[i];
-				if (!isnan(stress)) {
-					vis->sorted_stresses[vis->nsorted_stresses] = stress;
-					vis->nsorted_stresses++;
-				}
-			}
+		if (!isnan(stress)) {
+			vis->sorted_stresses[vis->nsorted_stresses] = stress;
+			vis->nsorted_stresses++;
+		}
+	}
 	qsort(vis->sorted_stresses, vis->nsorted_stresses, sizeof(*vis->sorted_stresses), number_cmp);
 }
 
