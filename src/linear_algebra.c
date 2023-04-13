@@ -188,133 +188,6 @@ void sparse_consolidate(struct sparse *restrict S)
 	S->len = i + 1;
 }
 
-int vec_init(struct vec *restrict v, int dim)
-{
-	v->dim = dim;
-	v->x = malloc(dim * sizeof(*v->x));
-	if (v->x == NULL) {
-		return -1;
-	}
-	for (int i = 0; i < dim; i++) {
-		v->x[i] = 0;
-	}
-	return 0;
-}
-
-void vec_destroy(struct vec *restrict v)
-{
-	v->dim = 0;
-	free(v->x);
-}
-
-/* out = Sv */
-void sparse_mult_vec(const struct sparse *restrict S, const struct vec *restrict v, struct vec *restrict out)
-{
-	for (int i = 0; i < out->dim; i++) {
-		out->x[i] = 0;
-	}
-
-	for (int n = 0; n < S->len; n++) {
-		int i = S->row[n];
-		int k = S->col[n];
-		out->x[i] += S->A[n] * v->x[k];
-	}
-}
-
-double vec_dot(const struct vec *a, const struct vec *b)
-{
-	double result = 0;
-	int dim = a->dim;
-
-	for (int i = 0; i < dim; i++) {
-		result += a->x[i] * b->x[i];
-	}
-	return result;
-}
-
-/* they must have the same dimensions */
-void vec_copy(const struct vec *restrict in, struct vec *restrict out)
-{
-	for (int i = 0; i < in->dim; i++) {
-		out->x[i] = in->x[i];
-	}
-}
-
-/* they must have the same dimensions */
-void vec_add(struct vec *a, struct vec *b, struct vec *out)
-{
-	int dim = out->dim;
-	for (int i = 0; i < dim; i++) {
-		out->x[i] = a->x[i] + b->x[i];
-	}
-}
-
-/* they must have the same dimensions */
-void vec_sub(struct vec *a, struct vec *b, struct vec *out)
-{
-	int dim = out->dim;
-	for (int i = 0; i < dim; i++) {
-		out->x[i] = a->x[i] - b->x[i];
-	}
-}
-
-/* scalar multiply */
-void vec_scale(double scalar, struct vec *restrict v)
-{
-	for (int i = 0; i < v->dim; i++) {
-		v->x[i] *= scalar;
-	}
-}
-
-void vec2_copy(struct vec2 *restrict in, struct vec2 *restrict out)
-{
-	for (int i = 0; i < 2; i++) {
-		out->x[i] = in->x[i];
-	}
-}
-
-void vec2_add(struct vec2 *a, struct vec2 *b, struct vec2 *out)
-{
-	for (int i = 0; i < 2; i++) {
-		out->x[i] = a->x[i] + b->x[i];
-	}
-}
-
-void vec2_sub(struct vec2 *a, struct vec2 *b, struct vec2 *out)
-{
-	for (int i = 0; i < 2; i++) {
-		out->x[i] = a->x[i] - b->x[i];
-	}
-}
-
-void vec2_scale(double scalar, struct vec2 *restrict v)
-{
-	for (int i = 0; i < 2; i++) {
-		v->x[i] *= scalar;
-	}
-}
-
-double vec2_dot(struct vec2 *a, struct vec2 *b)
-{
-	double result = 0;
-	for (int i = 0; i < 2; i++) {
-		result += a->x[i] * b->x[i];
-	}
-	return result;
-}
-
-void vec2_normalize(struct vec2 *restrict v)
-{
-	double norm = sqrt(vec2_dot(v, v));
-	vec2_scale(1.0/norm, v);
-}
-
-void vec2_midpoint(struct vec2 *a, struct vec2 *b, struct vec2 *out)
-{
-	vec2_add(a, b, out);
-	vec2_scale(0.5, out);
-}
-
 static void lu_swap_row(double *restrict lu, int dim, int *restrict row_idx,
 	int row0, int row1)
 {
@@ -459,6 +332,133 @@ void inverse_matrix2(double *restrict matrix, double *restrict inverse)
 	inverse[3] = matrix[0] * inv_det;
 	inverse[1] = -matrix[1] * inv_det;
 	inverse[2] = -matrix[2] * inv_det;
+}
+
+int vec_init(struct vec *restrict v, int dim)
+{
+	v->dim = dim;
+	v->x = malloc(dim * sizeof(*v->x));
+	if (v->x == NULL) {
+		return -1;
+	}
+	for (int i = 0; i < dim; i++) {
+		v->x[i] = 0;
+	}
+	return 0;
+}
+
+void vec_destroy(struct vec *restrict v)
+{
+	v->dim = 0;
+	free(v->x);
+}
+
+/* out = Sv */
+void sparse_mult_vec(const struct sparse *restrict S, const struct vec *restrict v, struct vec *restrict out)
+{
+	for (int i = 0; i < out->dim; i++) {
+		out->x[i] = 0;
+	}
+
+	for (int n = 0; n < S->len; n++) {
+		int i = S->row[n];
+		int k = S->col[n];
+		out->x[i] += S->A[n] * v->x[k];
+	}
+}
+
+double vec_dot(const struct vec *a, const struct vec *b)
+{
+	double result = 0;
+	int dim = a->dim;
+
+	for (int i = 0; i < dim; i++) {
+		result += a->x[i] * b->x[i];
+	}
+	return result;
+}
+
+/* they must have the same dimensions */
+void vec_copy(const struct vec *restrict in, struct vec *restrict out)
+{
+	for (int i = 0; i < in->dim; i++) {
+		out->x[i] = in->x[i];
+	}
+}
+
+/* they must have the same dimensions */
+void vec_add(struct vec *a, struct vec *b, struct vec *out)
+{
+	int dim = out->dim;
+	for (int i = 0; i < dim; i++) {
+		out->x[i] = a->x[i] + b->x[i];
+	}
+}
+
+/* they must have the same dimensions */
+void vec_sub(struct vec *a, struct vec *b, struct vec *out)
+{
+	int dim = out->dim;
+	for (int i = 0; i < dim; i++) {
+		out->x[i] = a->x[i] - b->x[i];
+	}
+}
+
+/* scalar multiply */
+void vec_scale(double scalar, struct vec *restrict v)
+{
+	for (int i = 0; i < v->dim; i++) {
+		v->x[i] *= scalar;
+	}
+}
+
+void vec2_copy(struct vec2 *restrict in, struct vec2 *restrict out)
+{
+	for (int i = 0; i < 2; i++) {
+		out->x[i] = in->x[i];
+	}
+}
+
+void vec2_add(struct vec2 *a, struct vec2 *b, struct vec2 *out)
+{
+	for (int i = 0; i < 2; i++) {
+		out->x[i] = a->x[i] + b->x[i];
+	}
+}
+
+void vec2_sub(struct vec2 *a, struct vec2 *b, struct vec2 *out)
+{
+	for (int i = 0; i < 2; i++) {
+		out->x[i] = a->x[i] - b->x[i];
+	}
+}
+
+void vec2_scale(double scalar, struct vec2 *restrict v)
+{
+	for (int i = 0; i < 2; i++) {
+		v->x[i] *= scalar;
+	}
+}
+
+double vec2_dot(struct vec2 *a, struct vec2 *b)
+{
+	double result = 0;
+	for (int i = 0; i < 2; i++) {
+		result += a->x[i] * b->x[i];
+	}
+	return result;
+}
+
+void vec2_normalize(struct vec2 *restrict v)
+{
+	double norm = sqrt(vec2_dot(v, v));
+	vec2_scale(1.0/norm, v);
+}
+
+void vec2_midpoint(struct vec2 *a, struct vec2 *b, struct vec2 *out)
+{
+	vec2_add(a, b, out);
+	vec2_scale(0.5, out);
 }
 
 int sparse_conj_grad(struct sparse *restrict A, struct vec *restrict b,
