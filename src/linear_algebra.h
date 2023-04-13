@@ -37,8 +37,7 @@ int sparse_add(struct sparse *restrict S, int row, int col, double entry);
 void sparse_sort(struct sparse *restrict S);
 void sparse_consolidate(struct sparse *restrict S);
 
-int lu_decomp(const double *restrict matrix, int dim, double *restrict out,
-	int *restrict row_idx);
+int lu_decomp(double *restrict matrix, int dim, int *restrict row_idx);
 void inverse_matrix(double *restrict matrix, int dim, double *restrict inverse);
 double matrix_det2(double *restrict matrix);
 void inverse_matrix2(double *restrict matrix, double *restrict inverse);

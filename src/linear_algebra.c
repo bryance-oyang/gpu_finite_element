@@ -208,8 +208,10 @@ static void lu_swap_row(double *restrict lu, int dim, int *restrict row_idx,
 /**
  * LU Decomposition
  *
+ * matrix will be replaced by its decomposition
+ *
  * row permute of matrix = A B where A is lower triangular with 1's on diag and
- * B is upper and combine both A and B like [A\B] in lu
+ * B is upper and combine both A and B like [A\B] in original matrix
  *
  * row_idx should be an input of row indices [0, 1, 2, ...] and will be permuted
  * to indicate the row permutation applied to matrix
@@ -219,8 +221,7 @@ static void lu_swap_row(double *restrict lu, int dim, int *restrict row_idx,
  *
  * returns (-1)^(# of swaps)
  */
-int lu_decomp(const double *restrict matrix, int dim, double *restrict lu,
-	int *restrict row_idx)
+int lu_decomp(double *restrict matrix, int dim, int *restrict row_idx)
 {
 	int parity = 1;
 
@@ -229,22 +230,22 @@ int lu_decomp(const double *restrict matrix, int dim, double *restrict lu,
 		for (int i = 0; i <= j; i++) {
 			double ab = 0;
 			for (int k = 0; k < i; k++) {
-				ab += lu[i*dim + k] * lu[k*dim + j];
+				ab += matrix[i*dim + k] * matrix[k*dim + j];
 			}
-			lu[i*dim + j] = matrix[i*dim + j] - ab;
+			matrix[i*dim + j] = matrix[i*dim + j] - ab;
 		}
 
 		/* determine a_ij without dividing by b_jj for i > j */
-		double max_abs_b = fabs(lu[j*dim + j]);
+		double max_abs_b = fabs(matrix[j*dim + j]);
 		int max_row = j;
 		for (int i = j + 1; i < dim; i++) {
 			double ab = 0;
 			for (int k = 0; k < j; k++) {
-				ab += lu[i*dim + k] * lu[k*dim + j];
+				ab += matrix[i*dim + k] * matrix[k*dim + j];
 			}
 			double b = matrix[i*dim + j] - ab;
 			double abs_b = fabs(b);
-			lu[i*dim + j] = b;
+			matrix[i*dim + j] = b;
 			if (abs_b > max_abs_b) {
 				max_abs_b = abs_b;
 				max_row = i;
@@ -253,72 +254,73 @@ int lu_decomp(const double *restrict matrix, int dim, double *restrict lu,
 
 		if (max_row != j) {
 			parity *= -1;
-			lu_swap_row(lu, dim, row_idx, max_row, j);
+			lu_swap_row(matrix, dim, row_idx, max_row, j);
 		}
 
 		/* divide a_ij by b_jj */
 		for (int i = j + 1; i < dim; i++) {
-			lu[i*dim + j] /= lu[j*dim + j];
+			matrix[i*dim + j] /= matrix[j*dim + j];
 		}
 	}
 
 	return parity;
 }
 
-/* perform LU Decomposition and do 2 linear solves */
+/*
+ * perform LU Decomposition and do 2 linear solves
+ *
+ * original matrix will be destroyed
+ */
 void inverse_matrix(double *restrict matrix, int dim, double *restrict inverse)
 {
-	double *restrict lu = malloc(dim * dim * sizeof(*lu));
-	double *restrict tmp = malloc(dim * dim * sizeof(*tmp));
 	int *restrict row_idx = malloc(dim * sizeof(*row_idx));
-	if (lu == NULL || tmp == NULL || row_idx == NULL) {
+	if (row_idx == NULL) {
 		raise(SIGSEGV);
 	}
 
+	/* to keep track of permutations in lu decomp */
 	for (int i = 0; i < dim; i++) {
 		row_idx[i] = i;
 	}
 
-	lu_decomp(matrix, dim, lu, row_idx);
+	lu_decomp(matrix, dim, row_idx);
 
 	/* solve Ly = I */
 	for (int j = 0; j < dim; j++) {
 		for (int i = 0; i < j; i++) {
-			tmp[i*dim + j] = 0;
+			matrix[i*dim + j] = 0;
 		}
 
-		tmp[j*dim + j] = 1.0;
+		matrix[j*dim + j] = 1.0;
 
 		for (int i = j + 1; i < dim; i++) {
 			double ay = 0;
 			for (int k = j; k < i; k++) {
-				ay += lu[i*dim + k] * tmp[k*dim + j];
+				ay += matrix[i*dim + k] * matrix[k*dim + j];
 			}
-			tmp[i*dim + j] = -ay;
+			matrix[i*dim + j] = -ay;
 		}
 	}
 
 	/* solve Ux = y */
 	for (int j = 0; j < dim; j++) {
-		tmp[(dim - 1)*dim + j] = tmp[(dim - 1)*dim + j] / lu[(dim - 1)*dim + (dim - 1)];
+		matrix[(dim - 1)*dim + j] = matrix[(dim - 1)*dim + j] / matrix[(dim - 1)*dim + (dim - 1)];
 		for (int i = dim - 2; i >= 0; i--) {
 			double bx = 0;
 			for (int k = i + 1; k < dim; k++) {
-				bx += lu[i*dim + k] * tmp[k*dim + j];
+				bx += matrix[i*dim + k] * matrix[k*dim + j];
 			}
-			tmp[i*dim + j] = (tmp[i*dim + j] - bx) / lu[i*dim + i];
+			matrix[i*dim + j] = (matrix[i*dim + j] - bx) / matrix[i*dim + i];
 		}
 	}
 
 	/* permute columns back according to the way rows were permuted in LU */
 	for (int i = 0; i < dim; i++) {
 		for (int j = 0; j < dim; j++) {
-			inverse[i*dim + row_idx[j]] = tmp[i*dim + j];
+			inverse[i*dim + row_idx[j]] = matrix[i*dim + j];
 		}
 	}
 
-	free(lu);
-	free(tmp);
 	free(row_idx);
 }
 
