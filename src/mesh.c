@@ -11,8 +11,9 @@
  * @brief mesh
  */
 
-#include <signal.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include <signal.h>
 #include <math.h>
 
 #include "mesh.h"

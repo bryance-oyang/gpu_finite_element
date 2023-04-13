@@ -14,6 +14,7 @@
 #define MESH_H
 
 #include <stdbool.h>
+
 #include "hash_table.h"
 #include "linear_algebra.h"
 

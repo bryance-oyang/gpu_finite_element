@@ -1,3 +1,11 @@
+/**
+ * @file
+ * @brief hash table
+ */
+
+#include <stdlib.h>
+#include <string.h>
+
 #include "hash_table.h"
 
 int ht_init(struct ht *ht)

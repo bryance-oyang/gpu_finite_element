@@ -1,9 +1,7 @@
 #ifndef HASH_TABLE_H
 #define HASH_TABLE_H
 
-#include <stdlib.h>
 #include <stdint.h>
-#include <string.h>
 
 #include "container_of.h"
 
