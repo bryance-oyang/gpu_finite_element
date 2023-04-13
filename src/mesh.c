@@ -12,12 +12,10 @@
  */
 
 #include <signal.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 
 #include "mesh.h"
-#include "container_of.h"
 
 #define HBUF_LEN 256
 char hash_buf[HBUF_LEN];

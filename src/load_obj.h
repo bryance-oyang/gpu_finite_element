@@ -13,7 +13,6 @@
 #ifndef LOAD_OBJ_H
 #define LOAD_OBJ_H
 
-#include <stdlib.h>
 #include <stdio.h>
 
 #include "mesh.h"

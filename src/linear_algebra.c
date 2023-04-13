@@ -11,14 +11,11 @@
  * @brief non-GPU accelerated and unoptimized versions
  */
 
-#include <signal.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
+#include <signal.h>
 #include <math.h>
 
 #include "linear_algebra.h"
-#include "mesh.h"
 #include "visualize.h"
 
 /*

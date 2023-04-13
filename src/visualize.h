@@ -14,6 +14,7 @@
 #define VISUALIZE_H
 
 #include <stdlib.h>
+#include <stdint.h>
 
 struct mesh;
 struct vec;

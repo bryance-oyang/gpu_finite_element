@@ -13,7 +13,6 @@
 
 #include <math.h>
 
-#include "linear_algebra.h"
 #include "visualize.h"
 #include "mesh.h"
 #include "ws_ctube.h"

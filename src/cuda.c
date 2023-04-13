@@ -11,13 +11,13 @@
  * @brief GPU accelerated solve
  */
 
-#include "solver.h"
-
 #ifdef GPU_COMPUTE
 
 #include <cuda_runtime.h>
 #include <cublas.h>
 #include <cusparse.h>
+
+#include "solver.h"
 
 int cuda_init(struct solver *restrict solver)
 {
