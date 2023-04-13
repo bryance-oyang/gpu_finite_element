@@ -120,6 +120,7 @@ static inline void swap_double(double *a, double *b)
 	*b = tmp;
 }
 
+/* partition function for quicksort */
 static int sparse_partition(struct sparse *restrict S, int lo, int hi)
 {
 	int i, j;
@@ -141,6 +142,7 @@ static int sparse_partition(struct sparse *restrict S, int lo, int hi)
 	return i;
 }
 
+/* sort into row-major format */
 static void sparse_qsort(struct sparse *restrict S, int lo, int hi)
 {
 	if (hi - lo < 2) {
@@ -152,6 +154,7 @@ static void sparse_qsort(struct sparse *restrict S, int lo, int hi)
 	sparse_qsort(S, mid + 1, hi);
 }
 
+/* sort into row-major format */
 void sparse_sort(struct sparse *restrict S)
 {
 	sparse_qsort(S, 0, S->len);
@@ -312,64 +315,72 @@ void vec2_midpoint(struct vec2 *a, struct vec2 *b, struct vec2 *out)
 	vec2_scale(0.5, out);
 }
 
-double matrix_det(double *restrict matrix, int dim);
-
-static double minor(double *restrict matrix, int dim, int i, int j)
+/**
+ * LU Decomposition
+ *
+ * matrix = A B where A is lower triangular with 1's on diag and B is upper
+ * and combine both A and B like [A\B] in out
+ */
+static void lu_decomp(double *restrict matrix, int dim, double *restrict out)
 {
-	double *restrict sub = malloc((dim - 1) * (dim - 1) * sizeof(*sub));
-	if (sub == NULL) {
-		raise(SIGSEGV);
-	}
-
-	for (int ii = 0, iii = 0; ii < dim; ii++) {
-		if (ii == i) {
-			continue;
-		}
-		for (int jj = 0, jjj = 0; jj < dim; jj++) {
-			if (jj == j) {
-				continue;
-			}
-			sub[iii*(dim - 1) + jjj] = matrix[ii*dim + jj];
-			jjj++;
-		}
-		iii++;
-	}
-
-	double sub_det = matrix_det(sub, dim - 1);
-	free(sub);
-	return sub_det;
-}
-
-double matrix_det(double *restrict matrix, int dim)
-{
-	if (dim == 1) {
-		return *matrix;
-	}
-
-	int sgn = 1;
-	double result = 0;
 	for (int j = 0; j < dim; j++) {
-		result += sgn * matrix[j] * minor(matrix, dim, 0, j);
-		sgn *= -1;
+		/* determine b_ij for i <= j */
+		for (int i = 0; i <= j; i++) {
+			double ab = 0;
+			for (int k = 0; k < i; k++) {
+				ab += out[i*dim + k] * out[k*dim + j];
+			}
+			out[i*dim + j] = matrix[i*dim + j] - ab;
+		}
+
+		/* determine a_ij for i > j */
+		for (int i = j + 1; i < dim; i++) {
+			double ab = 0;
+			for (int k = 0; k < j; k++) {
+				ab += out[i*dim + k] * out[k*dim + j];
+			}
+			out[i*dim + j] = (matrix[i*dim + j] - ab) / matrix[j*dim + j];
+		}
 	}
-	return result;
 }
 
+/* perform LU Decomposition and do 2 linear solves */
 void inverse_matrix(double *restrict matrix, int dim, double *restrict inverse)
 {
-	double inv_det = 1.0 / matrix_det(matrix, dim);
+	double *restrict lu = malloc(dim * dim * sizeof(*lu));
+	if (lu == NULL) {
+		raise(SIGSEGV);
+	}
+	lu_decomp(matrix, dim, lu);
 
-	for (int i = 0; i < dim; i++) {
-		for (int j = 0; j < dim; j++) {
-			int sgn = 1;
-			if ((i + j) % 2 != 0) {
-				sgn = -1;
+	/* solve Ly = I */
+	for (int j = 0; j < dim; j++) {
+		inverse[j*dim + j] = 1.0 / lu[j*dim + j];
+		for (int i = j + 1; i < dim; i++) {
+			double ay = 0;
+			for (int k = j; k < i; k++) {
+				ay += lu[i*dim + k] * inverse[k*dim + j];
 			}
-			inverse[i*dim + j] = sgn * minor(matrix, dim, j, i) * inv_det;
+			inverse[i*dim + j] = -ay / lu[i*dim + i];
 		}
 	}
+
+	/* solve Ux = y */
+	for (int j = 0; j < dim; j++) {
+		inverse[(dim - 1)*dim + j] = inverse[(dim - 1)*dim + j];
+		for (int i = dim - 2; i >= 0; i--) {
+			double bx = 0;
+			for (int k = i + 1; k < dim; k++) {
+				bx += lu[i*dim + k] * inverse[k*dim + j];
+			}
+			inverse[i*dim + j] -= bx;
+		}
+	}
+
+	free(lu);
 }
 
+/* 2x2 determinant */
 double matrix_det2(double *restrict matrix)
 {
 	return matrix[0] * matrix[3] - matrix[1] * matrix[2];
