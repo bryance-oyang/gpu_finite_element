@@ -266,19 +266,15 @@ int lu_decomp(double *restrict matrix, int dim, int *restrict row_idx)
 	return parity;
 }
 
-/*
- * perform LU Decomposition and do 2 linear solves
- *
- * original matrix will be destroyed
- */
+/* perform LU Decomposition and do 2 linear solves */
 void inverse_matrix(double *restrict matrix, int dim, double *restrict inverse)
 {
+	double *restrict tmp = malloc(dim * dim * sizeof(*tmp));
 	int *restrict row_idx = malloc(dim * sizeof(*row_idx));
-	if (row_idx == NULL) {
+	if (tmp == NULL || row_idx == NULL) {
 		raise(SIGSEGV);
 	}
 
-	/* to keep track of permutations in lu decomp */
 	for (int i = 0; i < dim; i++) {
 		row_idx[i] = i;
 	}
@@ -288,39 +284,40 @@ void inverse_matrix(double *restrict matrix, int dim, double *restrict inverse)
 	/* solve Ly = I */
 	for (int j = 0; j < dim; j++) {
 		for (int i = 0; i < j; i++) {
-			matrix[i*dim + j] = 0;
+			tmp[i*dim + j] = 0;
 		}
 
-		matrix[j*dim + j] = 1.0;
+		tmp[j*dim + j] = 1.0;
 
 		for (int i = j + 1; i < dim; i++) {
 			double ay = 0;
 			for (int k = j; k < i; k++) {
-				ay += matrix[i*dim + k] * matrix[k*dim + j];
+				ay += matrix[i*dim + k] * tmp[k*dim + j];
 			}
-			matrix[i*dim + j] = -ay;
+			tmp[i*dim + j] = -ay;
 		}
 	}
 
 	/* solve Ux = y */
 	for (int j = 0; j < dim; j++) {
-		matrix[(dim - 1)*dim + j] = matrix[(dim - 1)*dim + j] / matrix[(dim - 1)*dim + (dim - 1)];
+		tmp[(dim - 1)*dim + j] = tmp[(dim - 1)*dim + j] / matrix[(dim - 1)*dim + (dim - 1)];
 		for (int i = dim - 2; i >= 0; i--) {
 			double bx = 0;
 			for (int k = i + 1; k < dim; k++) {
-				bx += matrix[i*dim + k] * matrix[k*dim + j];
+				bx += matrix[i*dim + k] * tmp[k*dim + j];
 			}
-			matrix[i*dim + j] = (matrix[i*dim + j] - bx) / matrix[i*dim + i];
+			tmp[i*dim + j] = (tmp[i*dim + j] - bx) / matrix[i*dim + i];
 		}
 	}
 
 	/* permute columns back according to the way rows were permuted in LU */
 	for (int i = 0; i < dim; i++) {
 		for (int j = 0; j < dim; j++) {
-			inverse[i*dim + row_idx[j]] = matrix[i*dim + j];
+			inverse[i*dim + row_idx[j]] = tmp[i*dim + j];
 		}
 	}
 
+	free(tmp);
 	free(row_idx);
 }
 
