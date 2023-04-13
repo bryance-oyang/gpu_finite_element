@@ -249,22 +249,25 @@ static void fill_stresses(struct vis *restrict vis, struct mesh *restrict mesh, 
 				if (isnan(vis->stresses[i*IMAGE_WIDTH + j])) {
 					vis->stresses[i*IMAGE_WIDTH + j] = stress;
 				}
+			}
+		}
+	}
 
+	for (int i = 0; i < IMAGE_HEIGHT * IMAGE_WIDTH; i++) {
+		double stress = vis->stresses[i];
 				if (!isnan(stress)) {
 					vis->sorted_stresses[vis->nsorted_stresses] = stress;
 					vis->nsorted_stresses++;
 				}
 			}
-		}
-	}
+	qsort(vis->sorted_stresses, vis->nsorted_stresses, sizeof(*vis->sorted_stresses), number_cmp);
 }
 
 void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *restrict c)
 {
 	fill_stresses(vis, mesh, c);
 
-	/* sort and get percentile of stresses by index */
-	qsort(vis->sorted_stresses, vis->nsorted_stresses, sizeof(*vis->sorted_stresses), number_cmp);
+	/* get percentile of stresses by index */
 	double min_stress = vis->sorted_stresses[(int)(0.01 * (vis->nsorted_stresses - 1))];
 	double max_stress = vis->sorted_stresses[(int)(0.99 * (vis->nsorted_stresses - 1))];
 
