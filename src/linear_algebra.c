@@ -191,26 +191,25 @@ void sparse_consolidate(struct sparse *restrict S)
 static void lu_swap_row(double *restrict lu, int dim, int *restrict row_idx,
 	int row0, int row1)
 {
-	int tmp;
+	/* swap rows */
+	for (int j = 0; j < dim; j++) {
+		double entry = lu[row0*dim + j];
+		lu[row0*dim + j] = lu[row1*dim + j];
+		lu[row1*dim + j] = entry;
+	}
 
 	/* swap row indices */
+	int tmp;
 	tmp = row_idx[row0];
 	row_idx[row0] = row_idx[row1];
 	row_idx[row1] = tmp;
-
-	/* swap rows */
-	for (int j = 0; j < dim; j++) {
-		tmp = lu[row0*dim + j];
-		lu[row1*dim + j] = lu[row0*dim + j];
-		lu[row0*dim + j] = tmp;
-	}
 }
 
 /**
  * LU Decomposition
  *
  * row permute of matrix = A B where A is lower triangular with 1's on diag and
- * B is upper and combine both A and B like [A\B] in out
+ * B is upper and combine both A and B like [A\B] in lu
  *
  * row_idx should be an input of row indices [0, 1, 2, ...] and will be permuted
  * to indicate the row permutation applied to matrix
@@ -220,8 +219,8 @@ static void lu_swap_row(double *restrict lu, int dim, int *restrict row_idx,
  *
  * returns (-1)^(# of swaps)
  */
-static int lu_decomp(const double *restrict matrix, int dim,
-	double *restrict out, int *restrict row_idx)
+int lu_decomp(const double *restrict matrix, int dim, double *restrict lu,
+	int *restrict row_idx)
 {
 	int parity = 1;
 
@@ -230,22 +229,22 @@ static int lu_decomp(const double *restrict matrix, int dim,
 		for (int i = 0; i <= j; i++) {
 			double ab = 0;
 			for (int k = 0; k < i; k++) {
-				ab += out[i*dim + k] * out[k*dim + j];
+				ab += lu[i*dim + k] * lu[k*dim + j];
 			}
-			out[i*dim + j] = matrix[i*dim + j] - ab;
+			lu[i*dim + j] = matrix[i*dim + j] - ab;
 		}
 
 		/* determine a_ij without dividing by b_jj for i > j */
-		double max_abs_b = fabs(out[j*dim + j]);
+		double max_abs_b = fabs(lu[j*dim + j]);
 		int max_row = j;
 		for (int i = j + 1; i < dim; i++) {
 			double ab = 0;
 			for (int k = 0; k < j; k++) {
-				ab += out[i*dim + k] * out[k*dim + j];
+				ab += lu[i*dim + k] * lu[k*dim + j];
 			}
 			double b = matrix[i*dim + j] - ab;
 			double abs_b = fabs(b);
-			out[i*dim + j] = b;
+			lu[i*dim + j] = b;
 			if (abs_b > max_abs_b) {
 				max_abs_b = abs_b;
 				max_row = i;
@@ -254,12 +253,12 @@ static int lu_decomp(const double *restrict matrix, int dim,
 
 		if (max_row != j) {
 			parity *= -1;
-			lu_swap_row(out, dim, row_idx, max_row, j);
+			lu_swap_row(lu, dim, row_idx, max_row, j);
 		}
 
 		/* divide a_ij by b_jj */
 		for (int i = j + 1; i < dim; i++) {
-			out[i*dim + j] /= out[j*dim + j];
+			lu[i*dim + j] /= lu[j*dim + j];
 		}
 	}
 
@@ -284,7 +283,12 @@ void inverse_matrix(double *restrict matrix, int dim, double *restrict inverse)
 
 	/* solve Ly = I */
 	for (int j = 0; j < dim; j++) {
+		for (int i = 0; i < j; i++) {
+			tmp[i*dim + j] = 0;
+		}
+
 		tmp[j*dim + j] = 1.0;
+
 		for (int i = j + 1; i < dim; i++) {
 			double ay = 0;
 			for (int k = j; k < i; k++) {
@@ -296,7 +300,7 @@ void inverse_matrix(double *restrict matrix, int dim, double *restrict inverse)
 
 	/* solve Ux = y */
 	for (int j = 0; j < dim; j++) {
-		tmp[(dim - 1)*dim + j] = tmp[(dim - 1)*dim + j];
+		tmp[(dim - 1)*dim + j] = tmp[(dim - 1)*dim + j] / lu[(dim - 1)*dim + (dim - 1)];
 		for (int i = dim - 2; i >= 0; i--) {
 			double bx = 0;
 			for (int k = i + 1; k < dim; k++) {
