@@ -25,7 +25,7 @@ make animate
 cd viewer
 python -m http.server
 ```
-View at `http://localhost:8000/`.
+View at `http://localhost:8000/` using [websocket_ctube](https://github.com/bryance-oyang/websocket_ctube).
 
 ## Brief notes
 If $\psi^j$ is a small displacement field with $j$ indexing the spatial
@@ -33,10 +33,9 @@ directions, then the linearized strain is
 $$
 \epsilon^{ij} = \frac{1}{2}(\nabla^i \psi^j + \nabla^j \psi^i)
 $$
-and for a simple scalar elasticity $E$ (ignoring Poisson's ratio), the stress
-is
+and for a simple linear elasticity $E$, the stress is
 $$
-\sigma^{ij} = E \epsilon^{ij}
+\sigma^{ij} = E^{ij}{}_{kl} \epsilon^{kl}
 $$
 and Newton's second law $(F = ma)$ with density $\rho$ and external forces per
 volume $f^j$ is
@@ -44,29 +43,30 @@ $$
 \rho \frac{\partial^2 \psi^j}{\partial t^2} = \nabla_i \sigma^{ij} + f^j
 $$
 
-To solve for the steady state ($\partial_t^2 \psi^j = 0$), discretize by
-choosing some basis functions $u(x)$ (shape functions representing the degrees
-of freedom of interest) and expanding
+To solve for the steady state
+($0 = \nabla_i \sigma^{ij} + f^j$),
+discretize by choosing some basis functions $u(x)$ (shape functions representing
+the degrees of freedom of interest) and expanding
 $$
 \psi^j(x) = \sum_n c_n u_n^j(x)
 $$
 and then require that the coefficients $c$ make the following inner product zero
-with each $u$ (weak form discretized):
+with each $u$ (discretized weak form):
 $$
 0 = \int u_{mj} (\nabla_i \sigma^{ij} + f^j)\,d^3x
 $$
 
-This gives the matrix problem
+This gives the matrix problem for the coefficients $c$
 $$
 \sum_{n} A_{mn} c_n = b_m
 $$
 where
 $$
-A_{mn} = -\frac{E}{2}\int u_{mj} \nabla_i (\nabla^i u_n^j + \nabla^j u_n^i)\,d^3x\\
+A_{mn} = -\frac{1}{2}\int u_{mj} \nabla_i E^{ij}{}_{kl} (\nabla^k u_n^l + \nabla^l u_n^k)\,d^3x\\
 b_m = \int u_{mj}f^j\,d^3x
 $$
 and $A$ (the stiffness matrix) is symmetric with appropriate boundary conditions
-and sparse if $u_m$ was chosen well.
+and sparse if the shape functions $u$ were chosen to have little overlap.
 
 The conjugate gradient method can iteratively solve this for the coefficients
 $c$ and give the discretized solution.
