@@ -270,6 +270,8 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 	double min_stress = vis->sorted_stresses[(int)(0.01 * (vis->nsorted_stresses - 1))];
 	double max_stress = vis->sorted_stresses[(int)(0.99 * (vis->nsorted_stresses - 1))];
 
+	printf("99%% percentile stress: %lf\n", max_stress);
+
 	for (int i = 0; i < IMAGE_HEIGHT; i++) {
 		for (int j = 0; j < IMAGE_WIDTH; j++) {
 			double stress = vis->stresses[i*IMAGE_WIDTH + j];
@@ -283,6 +285,8 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 			}
 		}
 	}
+
+	double min_y = FLT_MAX;
 
 	/* triangles x0, y0, x1, y1, x2, y2 */
 	for (int e = 0; e < mesh->nelements; e++) {
@@ -299,11 +303,14 @@ void vis_fill(struct vis *restrict vis, struct mesh *restrict mesh, struct vec *
 				x = vert->pos.x[0];
 				y = vert->pos.x[1];
 			}
+			min_y = fmin(min_y, y);
 			get_ij(vis, x, y, &i, &j);
 			vis->data[3*IMAGE_HEIGHT*IMAGE_WIDTH + (e*3 + v)*DIM + 0] = j;
 			vis->data[3*IMAGE_HEIGHT*IMAGE_WIDTH + (e*3 + v)*DIM + 1] = i;
 		}
 	}
+
+	printf("min_y: %lf\n", min_y);
 }
 
 void vis_send(struct vis *restrict vis)
