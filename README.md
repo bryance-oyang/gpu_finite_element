@@ -81,3 +81,5 @@ and sparse if the shape functions $u$ were chosen to have little overlap.
 
 The conjugate gradient method can iteratively solve this for the coefficients
 $c$ and give the discretized solution.
+
+![structure.png](structure.png)
