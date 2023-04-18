@@ -60,7 +60,7 @@ and then require that the coefficients $c$ make the following inner product zero
 with each $u$ (discretized weak form):
 
 $$
-0 = \int u_{mj} (\nabla_i \sigma^{ij} + f^j)\,d^3x
+0 = \int u_{mj} (\nabla_i \sigma^{ij} + f^j)d^3x
 $$
 
 This gives the matrix problem for the coefficients $c$
@@ -72,8 +72,11 @@ $$
 where
 
 $$
-A_{mn} = -\frac{1}{2}\int u_{mj} \nabla_i E^{ij}{}_{kl} (\nabla^k u_n^l + \nabla^l u_n^k)\,d^3x\\
-b_m = \int u_{mj}f^j\,d^3x
+A_{mn} = -\frac{1}{2}\int u_{mj} \nabla_i E^{ij}{}_{kl} (\nabla^k u_n^l + \nabla^l u_n^k)d^3x
+$$
+
+$$
+b_m = \int u_{mj}f^jd^3x
 $$
 
 and $A$ (the stiffness matrix) is symmetric with appropriate boundary conditions
