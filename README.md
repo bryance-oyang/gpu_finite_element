@@ -48,10 +48,9 @@ $$
 \rho \frac{\partial^2 \psi^j}{\partial t^2} = \nabla_i \sigma^{ij} + f^j
 $$
 
-To solve for the steady state
-($0 = \nabla_i \sigma^{ij} + f^j$),
-discretize by choosing some basis functions $u(x)$ (shape functions representing
-the degrees of freedom of interest) and expanding
+To solve for the steady state ($0 = \nabla_i \sigma^{ij} + f^j$), discretize by
+choosing some basis functions $u(x)$ (shape functions representing the degrees
+of freedom of interest) and expanding
 
 $$
 \psi^j(x) = \sum_n c_n u_n^j(x)
