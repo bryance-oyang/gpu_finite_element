@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "mesh.h"
+#include "elements.h"
 
 int load_obj(char *filename, struct mesh *mesh, int elasticity)
 {

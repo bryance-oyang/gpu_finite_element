@@ -16,7 +16,7 @@
 #include <signal.h>
 #include <math.h>
 
-#include "mesh.h"
+#include "elements.h"
 
 #define HBUF_LEN 256
 char hash_buf[HBUF_LEN];

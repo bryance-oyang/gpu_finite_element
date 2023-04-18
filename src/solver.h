@@ -13,7 +13,7 @@
 #ifndef SOLVER_H
 #define SOLVER_H
 
-#include "mesh.h"
+#include "elements.h"
 
 struct vis;
 

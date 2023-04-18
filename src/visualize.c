@@ -14,7 +14,7 @@
 #include <math.h>
 
 #include "visualize.h"
-#include "mesh.h"
+#include "elements.h"
 #include "ws_ctube.h"
 
 struct bounding_box {
